@@ -35,44 +35,45 @@ export const parseKML = (kmlText: string): KMLPolygon[] => {
       });
     }
 
-    const polygonElements = placemark.querySelectorAll('Polygon');
-    
-    polygonElements.forEach((polygon) => {
-      const outerBoundary = polygon.querySelector('outerBoundaryIs coordinates');
-      
-      if (outerBoundary && outerBoundary.textContent) {
-        const coordsText = outerBoundary.textContent.trim();
-        const coordPairs = coordsText.split(/\s+/).filter(s => s.length > 0);
-        
-        const coordinates: [number, number][] = coordPairs
-          .map(pair => {
-            const parts = pair.split(',');
-            if (parts.length >= 2) {
-              const lng = parseFloat(parts[0]);
-              const lat = parseFloat(parts[1]);
-              if (!isNaN(lng) && !isNaN(lat)) {
-                return [lng, lat] as [number, number];
-              }
-            }
-            return null;
-          })
-          .filter((coord): coord is [number, number] => coord !== null);
-
-        if (coordinates.length >= 3) {
-          polygons.push({
-            name,
-            description,
-            coordinates: [coordinates],
-            properties
-          });
-        }
-      }
-    });
-
     const multiGeometry = placemark.querySelector('MultiGeometry');
+    
     if (multiGeometry) {
       const multiPolygons = multiGeometry.querySelectorAll('Polygon');
       multiPolygons.forEach((polygon) => {
+        const outerBoundary = polygon.querySelector('outerBoundaryIs coordinates');
+        
+        if (outerBoundary && outerBoundary.textContent) {
+          const coordsText = outerBoundary.textContent.trim();
+          const coordPairs = coordsText.split(/\s+/).filter(s => s.length > 0);
+          
+          const coordinates: [number, number][] = coordPairs
+            .map(pair => {
+              const parts = pair.split(',');
+              if (parts.length >= 2) {
+                const lng = parseFloat(parts[0]);
+                const lat = parseFloat(parts[1]);
+                if (!isNaN(lng) && !isNaN(lat)) {
+                  return [lng, lat] as [number, number];
+                }
+              }
+              return null;
+            })
+            .filter((coord): coord is [number, number] => coord !== null);
+
+          if (coordinates.length >= 3) {
+            polygons.push({
+              name,
+              description,
+              coordinates: [coordinates],
+              properties
+            });
+          }
+        }
+      });
+    } else {
+      const polygonElements = placemark.querySelectorAll('Polygon');
+      
+      polygonElements.forEach((polygon) => {
         const outerBoundary = polygon.querySelector('outerBoundaryIs coordinates');
         
         if (outerBoundary && outerBoundary.textContent) {
