@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import GeoImportDialog from '@/components/GeoImportDialog';
 import AttributeEditor from '@/components/AttributeEditor';
+import YandexMap from '@/components/YandexMap';
 import { PolygonObject } from '@/types/polygon';
 import { exportToGeoJSON } from '@/utils/geoExport';
 import { useToast } from '@/hooks/use-toast';
@@ -102,6 +103,7 @@ export default function Index() {
   const [mapOpacity, setMapOpacity] = useState([80]);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [useYandexMap, setUseYandexMap] = useState(true);
   const { toast } = useToast();
 
   const filteredData = polygonData.filter(item => {
@@ -344,6 +346,15 @@ export default function Index() {
               Центрировать
             </Button>
             
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setUseYandexMap(!useYandexMap)}
+            >
+              <Icon name={useYandexMap ? "Grid3x3" : "Globe"} size={16} className="mr-2" />
+              {useYandexMap ? 'Схема' : 'Яндекс'}
+            </Button>
+            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="default" size="sm">
@@ -375,46 +386,55 @@ export default function Index() {
         </header>
 
         <div className="flex-1 relative bg-muted/30 overflow-hidden">
-          <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
-            <defs>
-              <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.2" className="text-border" />
-              </pattern>
-            </defs>
-            
-            <rect width="100" height="100" fill="url(#grid)" />
+          {useYandexMap ? (
+            <YandexMap
+              polygons={filteredData}
+              selectedPolygonId={selectedObject?.id}
+              onPolygonClick={setSelectedObject}
+              opacity={mapOpacity[0] / 100}
+            />
+          ) : (
+            <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+              <defs>
+                <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                  <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.2" className="text-border" />
+                </pattern>
+              </defs>
+              
+              <rect width="100" height="100" fill="url(#grid)" />
 
-            {filteredData.map(item => {
-              const points = item.coordinates.map(coord => coord.join(',')).join(' ');
-              return (
-                <g
-                  key={item.id}
-                  className="cursor-pointer transition-all hover:opacity-100"
-                  onClick={() => setSelectedObject(item)}
-                  style={{ opacity: mapOpacity[0] / 100 }}
-                >
-                  <polygon
-                    points={points}
-                    fill={item.color}
-                    fillOpacity={selectedObject?.id === item.id ? 0.6 : 0.4}
-                    stroke={item.color}
-                    strokeWidth={selectedObject?.id === item.id ? 0.4 : 0.2}
-                    className="transition-all"
-                  />
-                  <text
-                    x={(item.coordinates[0][0] + item.coordinates[2][0]) / 2}
-                    y={(item.coordinates[0][1] + item.coordinates[2][1]) / 2}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    className="text-[2px] font-semibold pointer-events-none"
-                    fill="white"
+              {filteredData.map(item => {
+                const points = item.coordinates.map(coord => coord.join(',')).join(' ');
+                return (
+                  <g
+                    key={item.id}
+                    className="cursor-pointer transition-all hover:opacity-100"
+                    onClick={() => setSelectedObject(item)}
+                    style={{ opacity: mapOpacity[0] / 100 }}
                   >
-                    {item.name}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
+                    <polygon
+                      points={points}
+                      fill={item.color}
+                      fillOpacity={selectedObject?.id === item.id ? 0.6 : 0.4}
+                      stroke={item.color}
+                      strokeWidth={selectedObject?.id === item.id ? 0.4 : 0.2}
+                      className="transition-all"
+                    />
+                    <text
+                      x={(item.coordinates[0][0] + item.coordinates[2][0]) / 2}
+                      y={(item.coordinates[0][1] + item.coordinates[2][1]) / 2}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      className="text-[2px] font-semibold pointer-events-none"
+                      fill="white"
+                    >
+                      {item.name}
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
+          )}
 
           {selectedObject && (
             <Sheet open={!!selectedObject} onOpenChange={() => {
