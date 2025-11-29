@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
+import { parseKML, convertKMLToPolygonObjects } from '@/utils/kmlParser';
 
 interface GeoImportDialogProps {
   open: boolean;
@@ -125,10 +126,19 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
       const content = await file.text();
       setProgress(50);
 
-      const geojson = parseGeoJSON(content);
-      setProgress(75);
+      const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+      let polygons: any[] = [];
 
-      const polygons = convertGeoJSONToPolygons(geojson);
+      if (fileExtension === '.kml') {
+        const kmlPolygons = parseKML(content);
+        setProgress(75);
+        polygons = convertKMLToPolygonObjects(kmlPolygons);
+      } else {
+        const geojson = parseGeoJSON(content);
+        setProgress(75);
+        polygons = convertGeoJSONToPolygons(geojson);
+      }
+
       setProgress(90);
 
       if (polygons.length === 0) {
