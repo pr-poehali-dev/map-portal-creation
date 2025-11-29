@@ -139,7 +139,7 @@ export const convertKMLToPolygonObjects = (kmlPolygons: KMLPolygon[]) => {
         type: kmlPoly.properties.type || kmlPoly.properties.category || 'KML объект',
         area: validArea,
         population: kmlPoly.properties.population ? parseInt(kmlPoly.properties.population) : undefined,
-        status: kmlPoly.properties.status || 'Импортирован',
+        status: kmlPoly.properties.status,
         coordinates: normalizedCoords,
         color: color,
         layer: 'KML импорт',
