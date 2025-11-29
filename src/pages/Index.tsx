@@ -10,21 +10,11 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import Icon from '@/components/ui/icon';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import GeoImportDialog from '@/components/GeoImportDialog';
-
-interface PolygonObject {
-  id: string;
-  name: string;
-  type: string;
-  area: number;
-  population?: number;
-  status: string;
-  coordinates: [number, number][];
-  color: string;
-  layer: string;
-  visible: boolean;
-  attributes: Record<string, any>;
-}
+import { PolygonObject } from '@/types/polygon';
+import { exportToGeoJSON } from '@/utils/geoExport';
+import { useToast } from '@/hooks/use-toast';
 
 const sampleData: PolygonObject[] = [
   {
@@ -110,6 +100,7 @@ export default function Index() {
   );
   const [mapOpacity, setMapOpacity] = useState([80]);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   const filteredData = polygonData.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -133,6 +124,31 @@ export default function Index() {
         }
       });
       return updated;
+    });
+  };
+
+  const handleExportAll = () => {
+    exportToGeoJSON(polygonData);
+    toast({
+      title: 'Экспорт завершён',
+      description: `Экспортировано объектов: ${polygonData.length}`,
+    });
+  };
+
+  const handleExportFiltered = () => {
+    exportToGeoJSON(filteredData);
+    toast({
+      title: 'Экспорт завершён',
+      description: `Экспортировано объектов: ${filteredData.length}`,
+    });
+  };
+
+  const handleExportSelected = () => {
+    if (!selectedObject) return;
+    exportToGeoJSON([selectedObject], `${selectedObject.name.replace(/[^a-zа-я0-9]/gi, '_')}.geojson`);
+    toast({
+      title: 'Экспорт завершён',
+      description: `Экспортирован: ${selectedObject.name}`,
     });
   };
 
@@ -315,6 +331,34 @@ export default function Index() {
               <Icon name="Maximize" size={16} className="mr-2" />
               Центрировать
             </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="default" size="sm">
+                  <Icon name="Download" size={16} className="mr-2" />
+                  Экспорт
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={handleExportAll}>
+                  <Icon name="Database" size={16} className="mr-2" />
+                  Все объекты ({polygonData.length})
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportFiltered}>
+                  <Icon name="Filter" size={16} className="mr-2" />
+                  Отфильтрованные ({filteredData.length})
+                </DropdownMenuItem>
+                {selectedObject && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleExportSelected}>
+                      <Icon name="FileDown" size={16} className="mr-2" />
+                      Выбранный объект
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
@@ -432,7 +476,7 @@ export default function Index() {
                       <Icon name="Edit" size={16} className="mr-2" />
                       Редактировать
                     </Button>
-                    <Button className="flex-1">
+                    <Button className="flex-1" onClick={handleExportSelected}>
                       <Icon name="Download" size={16} className="mr-2" />
                       Экспорт
                     </Button>
