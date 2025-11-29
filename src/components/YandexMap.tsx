@@ -207,14 +207,21 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
 
     if (showCadastralLayer) {
       if (!cadastralLayerRef.current) {
-        cadastralLayerRef.current = new window.ymaps.Layer(
-          'https://pkk.rosreestr.ru/arcgis/rest/services/PKK6/CadastreSelected/MapServer/tile/%z/%y/%x',
-          {
-            tileTransparent: true,
-            projection: window.ymaps.projection.sphericalMercator
-          }
-        );
-        mapInstanceRef.current.layers.add(cadastralLayerRef.current);
+        const RosreestrLayer = function () {
+          return new window.ymaps.Layer(
+            'https://pkk.rosreestr.ru/arcgis/rest/services/PKK6/CadastreSelected/MapServer/tile/%z/%y/%x',
+            {
+              tileTransparent: true
+            }
+          );
+        };
+        
+        window.ymaps.layer.storage.add('rosreestr#cadastre', RosreestrLayer);
+        
+        const layerMapType = new window.ymaps.MapType('Кадастр', ['rosreestr#cadastre']);
+        mapInstanceRef.current.layers.add(layerMapType);
+        
+        cadastralLayerRef.current = layerMapType;
       }
     } else {
       if (cadastralLayerRef.current) {
