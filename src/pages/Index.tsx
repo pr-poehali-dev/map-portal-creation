@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,7 @@ import YandexMap from '@/components/YandexMap';
 import { PolygonObject } from '@/types/polygon';
 import { exportToGeoJSON } from '@/utils/geoExport';
 import { useToast } from '@/hooks/use-toast';
+import { polygonApi } from '@/services/polygonApi';
 
 const sampleData: PolygonObject[] = [
   {
@@ -93,7 +94,8 @@ const layers = [
 ];
 
 export default function Index() {
-  const [polygonData, setPolygonData] = useState<PolygonObject[]>(sampleData);
+  const [polygonData, setPolygonData] = useState<PolygonObject[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedObject, setSelectedObject] = useState<PolygonObject | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('Все');
@@ -107,6 +109,32 @@ export default function Index() {
   const [showAllTrigger, setShowAllTrigger] = useState(0);
   const { toast } = useToast();
 
+  useEffect(() => {
+    loadPolygons();
+  }, []);
+
+  const loadPolygons = async () => {
+    try {
+      setIsLoading(true);
+      const data = await polygonApi.getAll();
+      if (data.length === 0) {
+        await Promise.all(sampleData.map(polygon => polygonApi.create(polygon)));
+        const newData = await polygonApi.getAll();
+        setPolygonData(newData);
+      } else {
+        setPolygonData(data);
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка загрузки',
+        description: 'Не удалось загрузить данные',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const filteredData = polygonData.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           item.type.toLowerCase().includes(searchQuery.toLowerCase());
@@ -117,19 +145,33 @@ export default function Index() {
 
   const types = ['Все', ...Array.from(new Set(polygonData.map(item => item.type)))];
 
-  const handleImport = (importedPolygons: PolygonObject[]) => {
-    setPolygonData(prev => [...prev, ...importedPolygons]);
-    
-    const newLayers = Array.from(new Set(importedPolygons.map(p => p.layer)));
-    setLayerVisibility(prev => {
-      const updated = { ...prev };
-      newLayers.forEach(layer => {
-        if (!(layer in updated)) {
-          updated[layer] = true;
-        }
+  const handleImport = async (importedPolygons: PolygonObject[]) => {
+    try {
+      await Promise.all(importedPolygons.map(polygon => polygonApi.create(polygon)));
+      await loadPolygons();
+      
+      const newLayers = Array.from(new Set(importedPolygons.map(p => p.layer)));
+      setLayerVisibility(prev => {
+        const updated = { ...prev };
+        newLayers.forEach(layer => {
+          if (!(layer in updated)) {
+            updated[layer] = true;
+          }
+        });
+        return updated;
       });
-      return updated;
-    });
+      
+      toast({
+        title: 'Импорт завершён',
+        description: `Добавлено объектов: ${importedPolygons.length}`
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка импорта',
+        description: 'Не удалось импортировать данные',
+        variant: 'destructive'
+      });
+    }
   };
 
   const handleExportAll = () => {
@@ -157,14 +199,23 @@ export default function Index() {
     });
   };
 
-  const handleSaveObject = (updatedObject: PolygonObject) => {
-    setPolygonData(prev => prev.map(obj => obj.id === updatedObject.id ? updatedObject : obj));
-    setSelectedObject(updatedObject);
-    setIsEditing(false);
-    toast({
-      title: 'Изменения сохранены',
-      description: `Объект "${updatedObject.name}" успешно обновлён`,
-    });
+  const handleSaveObject = async (updatedObject: PolygonObject) => {
+    try {
+      await polygonApi.update(updatedObject.id, updatedObject);
+      setPolygonData(prev => prev.map(obj => obj.id === updatedObject.id ? updatedObject : obj));
+      setSelectedObject(updatedObject);
+      setIsEditing(false);
+      toast({
+        title: 'Изменения сохранены',
+        description: `Объект "${updatedObject.name}" успешно обновлён`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка сохранения',
+        description: 'Не удалось сохранить изменения',
+        variant: 'destructive'
+      });
+    }
   };
 
   return (
