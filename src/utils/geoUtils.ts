@@ -7,12 +7,12 @@ export function percentToGeo(percentCoords: number[][]): number[][] {
   ]);
 }
 
-export function calculatePolygonArea(coordinates: number[][]): number {
+export function calculatePolygonArea(coordinates: number[][], isPercent: boolean = true): number {
   if (!coordinates || coordinates.length < 3) {
     return 0;
   }
 
-  const geoCoords = percentToGeo(coordinates);
+  const geoCoords = isPercent ? percentToGeo(coordinates) : coordinates;
   
   const closedCoordinates = [...geoCoords];
   if (

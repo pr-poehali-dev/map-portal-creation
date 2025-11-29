@@ -117,7 +117,7 @@ export const convertKMLToPolygonObjects = (kmlPolygons: KMLPolygon[]) => {
   
   return kmlPolygons.flatMap((kmlPoly, index) => {
     return kmlPoly.coordinates.map((coords, polyIndex) => {
-      const areaInSquareMeters = calculatePolygonArea(coords);
+      const areaInSquareMeters = calculatePolygonArea(coords, false);
       const validArea = areaInSquareMeters < 0.01 ? 0.01 : areaInSquareMeters;
       
       console.log(`📏 KML area for ${kmlPoly.name}:`, {
