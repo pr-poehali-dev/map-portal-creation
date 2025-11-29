@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import Icon from '@/components/ui/icon';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import GeoImportDialog from '@/components/GeoImportDialog';
 
 interface PolygonObject {
   id: string;
@@ -100,6 +101,7 @@ const layers = [
 ];
 
 export default function Index() {
+  const [polygonData, setPolygonData] = useState<PolygonObject[]>(sampleData);
   const [selectedObject, setSelectedObject] = useState<PolygonObject | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('Все');
@@ -107,8 +109,9 @@ export default function Index() {
     layers.reduce((acc, layer) => ({ ...acc, [layer.name]: true }), {})
   );
   const [mapOpacity, setMapOpacity] = useState([80]);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
-  const filteredData = sampleData.filter(item => {
+  const filteredData = polygonData.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           item.type.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterType === 'Все' || item.type === filterType;
@@ -116,7 +119,22 @@ export default function Index() {
     return matchesSearch && matchesFilter && matchesLayer;
   });
 
-  const types = ['Все', ...Array.from(new Set(sampleData.map(item => item.type)))];
+  const types = ['Все', ...Array.from(new Set(polygonData.map(item => item.type)))];
+
+  const handleImport = (importedPolygons: PolygonObject[]) => {
+    setPolygonData(prev => [...prev, ...importedPolygons]);
+    
+    const newLayers = Array.from(new Set(importedPolygons.map(p => p.layer)));
+    setLayerVisibility(prev => {
+      const updated = { ...prev };
+      newLayers.forEach(layer => {
+        if (!(layer in updated)) {
+          updated[layer] = true;
+        }
+      });
+      return updated;
+    });
+  };
 
   return (
     <div className="flex h-screen bg-background dark">
@@ -256,7 +274,7 @@ export default function Index() {
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Icon name="Database" size={12} />
                       <span>
-                        {sampleData.filter(item => item.layer === layer.name).length} объектов
+                        {polygonData.filter(item => item.layer === layer.name).length} объектов
                       </span>
                     </div>
                   </Card>
@@ -267,7 +285,7 @@ export default function Index() {
         </Tabs>
 
         <div className="p-4 border-t border-sidebar-border">
-          <Button className="w-full" size="lg">
+          <Button className="w-full" size="lg" onClick={() => setImportDialogOpen(true)}>
             <Icon name="Upload" size={18} className="mr-2" />
             Импорт данных
           </Button>
@@ -442,6 +460,12 @@ export default function Index() {
           </div>
         </footer>
       </main>
+
+      <GeoImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onImport={handleImport}
+      />
     </div>
   );
 }
