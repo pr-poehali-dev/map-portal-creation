@@ -111,6 +111,10 @@ export default function Index() {
   const [cadastralSearchOpen, setCadastralSearchOpen] = useState(false);
   const [cadastralSearchCoords, setCadastralSearchCoords] = useState<[number, number] | null>(null);
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
+  const [trashData, setTrashData] = useState<PolygonObject[]>([]);
+  const [viewingTrash, setViewingTrash] = useState(false);
+  const [confirmPermanentDelete, setConfirmPermanentDelete] = useState<string | null>(null);
+  const [confirmEmptyTrash, setConfirmEmptyTrash] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -136,6 +140,75 @@ export default function Index() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadTrash = async () => {
+    if (user?.role !== 'admin') return;
+    
+    try {
+      const data = await polygonApi.getTrash();
+      setTrashData(data);
+    } catch (error) {
+      toast({
+        title: 'Ошибка загрузки корзины',
+        description: 'Не удалось загрузить корзину',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleRestoreFromTrash = async (id: string) => {
+    try {
+      await polygonApi.restoreFromTrash(id);
+      toast({
+        title: 'Восстановлено',
+        description: 'Объект восстановлен из корзины'
+      });
+      await loadTrash();
+      await loadPolygons();
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось восстановить объект',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handlePermanentDelete = async (id: string) => {
+    try {
+      await polygonApi.permanentDelete(id);
+      toast({
+        title: 'Удалено навсегда',
+        description: 'Объект удалён безвозвратно'
+      });
+      await loadTrash();
+      setConfirmPermanentDelete(null);
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить объект',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleEmptyTrash = async () => {
+    try {
+      await polygonApi.emptyTrash();
+      toast({
+        title: 'Корзина очищена',
+        description: 'Все объекты удалены безвозвратно'
+      });
+      await loadTrash();
+      setConfirmEmptyTrash(false);
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось очистить корзину',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -272,8 +345,8 @@ export default function Index() {
       setDeleteDialogOpen(false);
       setObjectToDelete(null);
       toast({
-        title: 'Объект удалён',
-        description: 'Объект успешно удалён из базы данных',
+        title: 'Перемещено в корзину',
+        description: 'Объект перемещён в корзину. Администратор может восстановить его.',
       });
     } catch (error) {
       toast({
@@ -382,6 +455,13 @@ export default function Index() {
         setMapOpacity={setMapOpacity}
         polygonData={polygonData}
         setImportDialogOpen={setImportDialogOpen}
+        trashData={trashData}
+        viewingTrash={viewingTrash}
+        setViewingTrash={setViewingTrash}
+        loadTrash={loadTrash}
+        handleRestoreFromTrash={handleRestoreFromTrash}
+        handlePermanentDelete={(id) => setConfirmPermanentDelete(id)}
+        handleEmptyTrash={() => setConfirmEmptyTrash(true)}
       />
 
       <main className="flex-1 flex flex-col">
@@ -464,15 +544,55 @@ export default function Index() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Подтвердите удаление</AlertDialogTitle>
+            <AlertDialogTitle>Переместить в корзину</AlertDialogTitle>
             <AlertDialogDescription>
-              Вы уверены, что хотите удалить этот объект? Это действие нельзя будет отменить.
+              Объект будет перемещён в корзину. Администратор сможет восстановить его позже.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Отмена</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteConfirm}>
-              Удалить
+              В корзину
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!confirmPermanentDelete} onOpenChange={() => setConfirmPermanentDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить безвозвратно?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Вы действительно хотите удалить этот объект навсегда? Это действие нельзя будет отменить.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => confirmPermanentDelete && handlePermanentDelete(confirmPermanentDelete)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Удалить навсегда
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmEmptyTrash} onOpenChange={setConfirmEmptyTrash}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Очистить корзину?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Все объекты в корзине ({trashData.length}) будут удалены безвозвратно. Это действие нельзя будет отменить.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleEmptyTrash}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Очистить корзину
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

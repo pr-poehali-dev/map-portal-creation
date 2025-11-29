@@ -112,9 +112,38 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
         if method == 'GET':
+            source = event.get('queryStringParameters', {}).get('source', 'active')
             polygon_id = event.get('queryStringParameters', {}).get('id')
             
-            print(f"DEBUG GET: user_id={user_id}, polygon_id={polygon_id}")
+            print(f"DEBUG GET: user_id={user_id}, polygon_id={polygon_id}, source={source}")
+            
+            if source == 'trash':
+                cur.execute("SELECT role FROM users WHERE id = '" + user_id.replace("'", "''") + "'")
+                user = cur.fetchone()
+                
+                if not user or user['role'] != 'admin':
+                    return {
+                        'statusCode': 403,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Only admin can view trash'})
+                    }
+                
+                cur.execute("SELECT * FROM trash_polygons ORDER BY moved_to_trash_at DESC")
+                trash_results = cur.fetchall()
+                
+                trash_items = [dict(row) for row in trash_results]
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    },
+                    'body': json.dumps(trash_items, default=json_serializer)
+                }
             
             if polygon_id:
                 cur.execute(
@@ -179,6 +208,72 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         elif method == 'POST':
             body = json.loads(event.get('body', '{}'))
+            action = body.get('action', 'create')
+            
+            if action == 'restore_from_trash':
+                polygon_id = body.get('id')
+                
+                if not polygon_id:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Polygon ID required'})
+                    }
+                
+                cur.execute("SELECT role FROM users WHERE id = '" + user_id.replace("'", "''") + "'")
+                user = cur.fetchone()
+                
+                if not user or user['role'] != 'admin':
+                    return {
+                        'statusCode': 403,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Only admin can restore from trash'})
+                    }
+                
+                cur.execute(
+                    "SELECT * FROM trash_polygons WHERE id = '" + polygon_id.replace("'", "''") + "'"
+                )
+                trash_item = cur.fetchone()
+                
+                if not trash_item:
+                    return {
+                        'statusCode': 404,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Polygon not found in trash'})
+                    }
+                
+                cur.execute(
+                    "INSERT INTO polygon_objects (id, name, type, area, population, status, coordinates, color, layer, visible, attributes, user_id, created_at) "
+                    "VALUES ('" + trash_item['id'].replace("'", "''") + "', "
+                    "'" + trash_item['name'].replace("'", "''") + "', "
+                    "'" + trash_item['type'].replace("'", "''") + "', "
+                    "" + (str(trash_item['area']) if trash_item.get('area') else 'NULL') + ", "
+                    "" + (str(trash_item['population']) if trash_item.get('population') else 'NULL') + ", "
+                    "'" + trash_item['status'].replace("'", "''") + "', "
+                    "'" + json.dumps(trash_item['coordinates']).replace("'", "''") + "', "
+                    "'" + trash_item['color'].replace("'", "''") + "', "
+                    "'" + trash_item['layer'].replace("'", "''") + "', "
+                    "" + str(trash_item.get('visible', True)).lower() + ", "
+                    "'" + json.dumps(trash_item.get('attributes', {})).replace("'", "''") + "', "
+                    "'" + trash_item['user_id'].replace("'", "''") + "', "
+                    "'" + trash_item['original_created_at'].isoformat() + "') "
+                    "RETURNING *"
+                )
+                restored = cur.fetchone()
+                
+                cur.execute(
+                    "DELETE FROM trash_polygons WHERE id = '" + polygon_id.replace("'", "''") + "'"
+                )
+                conn.commit()
+                
+                log_action(cur, conn, user_id, 'restore_from_trash', 'polygon', polygon_id, 'Restored: ' + trash_item['name'])
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps(dict(restored), default=json_serializer)
+                }
+            
             layer = body['layer']
             
             if not check_permission(cur, user_id, 'layer', layer, 'write'):
@@ -280,7 +375,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         elif method == 'DELETE':
+            action = event.get('queryStringParameters', {}).get('action', 'move_to_trash')
             polygon_id = event.get('queryStringParameters', {}).get('id')
+            
             if not polygon_id:
                 return {
                     'statusCode': 400,
@@ -288,43 +385,123 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'error': 'Polygon ID required'})
                 }
             
-            cur.execute(
-                "SELECT user_id, layer, name FROM polygon_objects WHERE id = '" + polygon_id.replace("'", "''") + "'"
-            )
-            existing = cur.fetchone()
-            
-            if not existing:
+            if action == 'move_to_trash':
+                cur.execute(
+                    "SELECT * FROM polygon_objects WHERE id = '" + polygon_id.replace("'", "''") + "'"
+                )
+                existing = cur.fetchone()
+                
+                if not existing:
+                    return {
+                        'statusCode': 404,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Polygon not found'})
+                    }
+                
+                if existing['user_id'] != user_id:
+                    cur.execute("SELECT role FROM users WHERE id = '" + user_id.replace("'", "''") + "'")
+                    user = cur.fetchone()
+                    
+                    if not user or user['role'] != 'admin':
+                        if not check_permission(cur, user_id, 'layer', existing['layer'], 'delete'):
+                            return {
+                                'statusCode': 403,
+                                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                                'body': json.dumps({'error': 'No permission to delete this object'})
+                            }
+                
+                cur.execute(
+                    "INSERT INTO trash_polygons (id, name, type, area, population, status, coordinates, color, layer, visible, attributes, user_id, original_created_at, moved_by_user) "
+                    "VALUES ('" + existing['id'].replace("'", "''") + "', "
+                    "'" + existing['name'].replace("'", "''") + "', "
+                    "'" + existing['type'].replace("'", "''") + "', "
+                    "" + (str(existing['area']) if existing.get('area') else 'NULL') + ", "
+                    "" + (str(existing['population']) if existing.get('population') else 'NULL') + ", "
+                    "'" + existing['status'].replace("'", "''") + "', "
+                    "'" + json.dumps(existing['coordinates']).replace("'", "''") + "', "
+                    "'" + existing['color'].replace("'", "''") + "', "
+                    "'" + existing['layer'].replace("'", "''") + "', "
+                    "" + str(existing.get('visible', True)).lower() + ", "
+                    "'" + json.dumps(existing.get('attributes', {})).replace("'", "''") + "', "
+                    "'" + existing['user_id'].replace("'", "''") + "', "
+                    "'" + existing['created_at'].isoformat() + "', "
+                    "'" + user_id.replace("'", "''") + "')"
+                )
+                
+                cur.execute(
+                    "DELETE FROM polygon_objects WHERE id = '" + polygon_id.replace("'", "''") + "'"
+                )
+                conn.commit()
+                
+                log_action(cur, conn, user_id, 'move_to_trash', 'polygon', polygon_id, 'Moved to trash: ' + existing['name'])
+                
                 return {
-                    'statusCode': 404,
+                    'statusCode': 200,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'error': 'Polygon not found'})
+                    'body': json.dumps({'message': 'Polygon moved to trash', 'id': polygon_id})
                 }
             
-            if existing['user_id'] != user_id:
+            elif action == 'permanent':
                 cur.execute("SELECT role FROM users WHERE id = '" + user_id.replace("'", "''") + "'")
                 user = cur.fetchone()
                 
                 if not user or user['role'] != 'admin':
-                    if not check_permission(cur, user_id, 'layer', existing['layer'], 'delete'):
-                        return {
-                            'statusCode': 403,
-                            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                            'body': json.dumps({'error': 'No permission to delete this object'})
-                        }
+                    return {
+                        'statusCode': 403,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Only admin can permanently delete'})
+                    }
+                
+                cur.execute(
+                    "SELECT name FROM trash_polygons WHERE id = '" + polygon_id.replace("'", "''") + "'"
+                )
+                trash_item = cur.fetchone()
+                
+                if not trash_item:
+                    return {
+                        'statusCode': 404,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Polygon not found in trash'})
+                    }
+                
+                cur.execute(
+                    "DELETE FROM trash_polygons WHERE id = '" + polygon_id.replace("'", "''") + "'"
+                )
+                conn.commit()
+                
+                log_action(cur, conn, user_id, 'permanent_delete', 'polygon', polygon_id, 'Permanently deleted: ' + trash_item['name'])
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'message': 'Polygon permanently deleted', 'id': polygon_id})
+                }
             
-            cur.execute(
-                "DELETE FROM polygon_objects WHERE id = '" + polygon_id.replace("'", "''") + "' RETURNING id"
-            )
-            result = cur.fetchone()
-            conn.commit()
-            
-            log_action(cur, conn, user_id, 'delete_object', 'polygon', polygon_id, 'Deleted ' + existing['name'])
-            
-            return {
-                'statusCode': 200,
-                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'message': 'Polygon deleted successfully', 'id': result['id']})
-            }
+            elif action == 'empty_trash':
+                cur.execute("SELECT role FROM users WHERE id = '" + user_id.replace("'", "''") + "'")
+                user = cur.fetchone()
+                
+                if not user or user['role'] != 'admin':
+                    return {
+                        'statusCode': 403,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Only admin can empty trash'})
+                    }
+                
+                cur.execute("SELECT COUNT(*) as count FROM trash_polygons")
+                count_result = cur.fetchone()
+                count = count_result['count'] if count_result else 0
+                
+                cur.execute("DELETE FROM trash_polygons")
+                conn.commit()
+                
+                log_action(cur, conn, user_id, 'empty_trash', 'polygon', None, f'Emptied trash: {count} items')
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'message': f'Trash emptied: {count} items deleted'})
+                }
         
         return {
             'statusCode': 405,

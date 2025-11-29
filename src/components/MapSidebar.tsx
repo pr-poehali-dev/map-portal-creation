@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,13 @@ interface MapSidebarProps {
   setMapOpacity: (opacity: number[]) => void;
   polygonData: PolygonObject[];
   setImportDialogOpen: (open: boolean) => void;
+  trashData: PolygonObject[];
+  viewingTrash: boolean;
+  setViewingTrash: (viewing: boolean) => void;
+  loadTrash: () => Promise<void>;
+  handleRestoreFromTrash: (id: string) => Promise<void>;
+  handlePermanentDelete: (id: string) => void;
+  handleEmptyTrash: () => void;
 }
 
 export default function MapSidebar({
@@ -47,8 +55,21 @@ export default function MapSidebar({
   mapOpacity,
   setMapOpacity,
   polygonData,
-  setImportDialogOpen
+  setImportDialogOpen,
+  trashData,
+  viewingTrash,
+  setViewingTrash,
+  loadTrash,
+  handleRestoreFromTrash,
+  handlePermanentDelete,
+  handleEmptyTrash
 }: MapSidebarProps) {
+  useEffect(() => {
+    if (viewingTrash && user?.role === 'admin') {
+      loadTrash();
+    }
+  }, [viewingTrash]);
+
   return (
     <aside className="w-80 border-r border-sidebar-border bg-sidebar-background flex flex-col h-screen">
       <div className="p-6 border-b border-sidebar-border flex-shrink-0">
@@ -95,7 +116,7 @@ export default function MapSidebar({
         </div>
       </div>
 
-      <Tabs defaultValue="objects" className="flex-1 flex flex-col min-h-0">
+      <Tabs defaultValue="objects" className="flex-1 flex flex-col min-h-0" onValueChange={(value) => setViewingTrash(value === 'trash')}>
         <TabsList className="mx-6 mt-4 bg-sidebar-accent flex-shrink-0">
           <TabsTrigger value="objects" className="flex-1">
             <Icon name="Layers" size={16} className="mr-2" />
@@ -105,6 +126,12 @@ export default function MapSidebar({
             <Icon name="Eye" size={16} className="mr-2" />
             Слои
           </TabsTrigger>
+          {user?.role === 'admin' && (
+            <TabsTrigger value="trash" className="flex-1">
+              <Icon name="Trash2" size={16} className="mr-2" />
+              Корзина
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="objects" className="flex-1 flex flex-col mt-0 min-h-0">
@@ -216,6 +243,75 @@ export default function MapSidebar({
             </div>
           </ScrollArea>
         </TabsContent>
+
+        {user?.role === 'admin' && (
+          <TabsContent value="trash" className="flex-1 flex flex-col mt-0 min-h-0">
+            <ScrollArea className="flex-1">
+              <div className="p-4 space-y-3">
+                {trashData.length > 0 && (
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    className="w-full mb-4"
+                    onClick={handleEmptyTrash}
+                  >
+                    <Icon name="Trash2" size={16} className="mr-2" />
+                    Очистить корзину ({trashData.length})
+                  </Button>
+                )}
+
+                {trashData.map(item => (
+                  <Card
+                    key={item.id}
+                    className="p-4"
+                  >
+                    <div className="flex items-start gap-3 mb-3">
+                      <div
+                        className="w-4 h-4 rounded-full mt-1 flex-shrink-0 opacity-50"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm text-card-foreground mb-1">{item.name}</h3>
+                        <p className="text-xs text-muted-foreground mb-2">{item.type}</p>
+                        <div className="flex items-center gap-3 text-xs">
+                          <span className="flex items-center gap-1 text-muted-foreground">
+                            <Icon name="Maximize2" size={12} />
+                            {item.area} км²
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => handleRestoreFromTrash(item.id)}
+                      >
+                        <Icon name="RotateCcw" size={14} className="mr-1" />
+                        Восстановить
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handlePermanentDelete(item.id)}
+                      >
+                        <Icon name="X" size={14} />
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+
+                {trashData.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Icon name="Trash2" size={48} className="mx-auto mb-3 opacity-20" />
+                    <p>Корзина пуста</p>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+        )}
       </Tabs>
 
       <div className="p-4 border-t border-sidebar-border flex-shrink-0">
