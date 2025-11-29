@@ -84,7 +84,7 @@ export default function ObjectDetailsSheet({
                     <Icon name="Maximize2" size={16} className="text-primary" />
                     <span className="text-xs text-muted-foreground">Площадь</span>
                   </div>
-                  <p className="text-2xl font-bold text-foreground">{selectedObject.area} км²</p>
+                  <p className="text-2xl font-bold text-foreground">{(selectedObject.area * 100).toFixed(2)} га</p>
                 </Card>
 
                 {selectedObject.population && (

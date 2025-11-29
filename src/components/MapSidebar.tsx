@@ -176,7 +176,7 @@ export default function MapSidebar({
                       <div className="flex items-center gap-3 text-xs">
                         <span className="flex items-center gap-1 text-muted-foreground">
                           <Icon name="Maximize2" size={12} />
-                          {item.area} км²
+                          {(item.area * 100).toFixed(2)} га
                         </span>
                         {item.population && (
                           <span className="flex items-center gap-1 text-muted-foreground">
@@ -307,7 +307,7 @@ export default function MapSidebar({
                         <div className="flex items-center gap-3 text-xs">
                           <span className="flex items-center gap-1 text-muted-foreground">
                             <Icon name="Maximize2" size={12} />
-                            {item.area} км²
+                            {(item.area * 100).toFixed(2)} га
                           </span>
                         </div>
                       </div>
