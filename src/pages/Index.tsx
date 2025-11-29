@@ -218,6 +218,24 @@ export default function Index() {
     }
   };
 
+  const handleDeleteObject = async (id: string) => {
+    try {
+      await polygonApi.delete(id);
+      setPolygonData(prev => prev.filter(obj => obj.id !== id));
+      setSelectedObject(null);
+      toast({
+        title: 'Объект удалён',
+        description: 'Объект успешно удалён из базы данных',
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка удаления',
+        description: 'Не удалось удалить объект',
+        variant: 'destructive'
+      });
+    }
+  };
+
   return (
     <div className="flex h-screen bg-background dark">
       <aside className="w-80 border-r border-sidebar-border bg-sidebar-background flex flex-col">
@@ -504,14 +522,24 @@ export default function Index() {
                       </div>
                     </div>
                     {!isEditing && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsEditing(true)}
-                      >
-                        <Icon name="Edit" size={16} className="mr-2" />
-                        Редактировать
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsEditing(true)}
+                        >
+                          <Icon name="Edit" size={16} className="mr-2" />
+                          Редактировать
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteObject(selectedObject.id)}
+                        >
+                          <Icon name="Trash2" size={16} className="mr-2" />
+                          Удалить
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </SheetHeader>
