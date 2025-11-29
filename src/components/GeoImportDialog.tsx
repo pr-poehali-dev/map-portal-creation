@@ -72,15 +72,15 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
       const properties = feature.properties || {};
 
       if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
-        let rawCoordinates: any[] = [];
+        let outerRings: any[] = [];
 
         if (geometryType === 'Polygon') {
-          rawCoordinates = feature.geometry.coordinates;
+          outerRings = [feature.geometry.coordinates[0]];
         } else if (geometryType === 'MultiPolygon') {
-          rawCoordinates = feature.geometry.coordinates.flatMap((poly: any) => poly);
+          outerRings = feature.geometry.coordinates.map((poly: any) => poly[0]);
         }
 
-        const normalizedCoords = rawCoordinates.map(ring => 
+        const normalizedRings = outerRings.map(ring => 
           ring.map(([lng, lat]: [number, number]) => {
             const x = ((lng + 180) / 360) * 100;
             const y = ((90 - lat) / 180) * 100;
@@ -101,14 +101,14 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
           area: validArea,
           population: properties.population || properties.pop || undefined,
           status: properties.status || 'Импортирован',
-          coordinates: normalizedCoords.length === 1 ? normalizedCoords[0] : normalizedCoords,
+          coordinates: normalizedRings.length === 1 ? normalizedRings[0] : normalizedRings,
           color: color,
           layer: 'Импортированные данные',
           visible: true,
           attributes: {
             ...properties,
             isMultiPolygon: geometryType === 'MultiPolygon',
-            partsCount: normalizedCoords.length
+            partsCount: normalizedRings.length
           }
         });
       }
