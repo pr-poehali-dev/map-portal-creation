@@ -110,6 +110,7 @@ export default function Index() {
   const [showAllTrigger, setShowAllTrigger] = useState(0);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [objectToDelete, setObjectToDelete] = useState<string | null>(null);
+  const [showCadastralLayer, setShowCadastralLayer] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -433,6 +434,17 @@ export default function Index() {
               {useYandexMap ? 'Схема' : 'Яндекс'}
             </Button>
             
+            {useYandexMap && (
+              <Button
+                variant={showCadastralLayer ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowCadastralLayer(!showCadastralLayer)}
+              >
+                <Icon name="Map" size={16} className="mr-2" />
+                Кадастр
+              </Button>
+            )}
+            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="default" size="sm">
@@ -471,6 +483,7 @@ export default function Index() {
               onPolygonClick={setSelectedObject}
               opacity={mapOpacity[0] / 100}
               showAllTrigger={showAllTrigger}
+              showCadastralLayer={showCadastralLayer}
             />
           ) : (
             <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">

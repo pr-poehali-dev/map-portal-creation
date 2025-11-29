@@ -7,6 +7,7 @@ interface YandexMapProps {
   onPolygonClick?: (polygon: PolygonObject) => void;
   opacity?: number;
   showAllTrigger?: number;
+  showCadastralLayer?: boolean;
 }
 
 declare global {
@@ -15,11 +16,12 @@ declare global {
   }
 }
 
-export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick, opacity = 0.8, showAllTrigger = 0 }: YandexMapProps) {
+export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick, opacity = 0.8, showAllTrigger = 0, showCadastralLayer = false }: YandexMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const polygonObjectsRef = useRef<Map<string, any>>(new Map());
   const isInitialLoadRef = useRef<boolean>(true);
+  const cadastralLayerRef = useRef<any>(null);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -38,12 +40,6 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
           zoom: 10,
           controls: ['zoomControl', 'typeSelector', 'fullscreenControl']
         });
-
-        mapInstanceRef.current.layers.add(
-          new window.ymaps.Layer('https://core-renderer-tiles.maps.yandex.net/tiles?l=map&%c&%l', {
-            projection: window.ymaps.projection.sphericalMercator
-          })
-        );
       });
     };
 
@@ -159,6 +155,28 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
       );
     }
   }, [showAllTrigger, polygons]);
+
+  useEffect(() => {
+    if (!mapInstanceRef.current || !window.ymaps) return;
+
+    if (showCadastralLayer) {
+      if (!cadastralLayerRef.current) {
+        cadastralLayerRef.current = new window.ymaps.Layer(
+          'https://pkk.rosreestr.ru/arcgis/rest/services/PKK6/CadastreSelected/MapServer/tile/%z/%y/%x',
+          {
+            tileTransparent: true,
+            projection: window.ymaps.projection.sphericalMercator
+          }
+        );
+        mapInstanceRef.current.layers.add(cadastralLayerRef.current);
+      }
+    } else {
+      if (cadastralLayerRef.current) {
+        mapInstanceRef.current.layers.remove(cadastralLayerRef.current);
+        cadastralLayerRef.current = null;
+      }
+    }
+  }, [showCadastralLayer]);
 
   return <div ref={mapRef} className="w-full h-full" />;
 }
