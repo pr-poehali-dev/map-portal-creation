@@ -29,9 +29,7 @@ export function calculatePolygonArea(coordinates: number[][], isPercent: boolean
 }
 
 export function formatArea(areaInSquareMeters: number): string {
-  if (areaInSquareMeters < 10000) {
-    return `${areaInSquareMeters < 10 ? areaInSquareMeters.toFixed(2) : areaInSquareMeters.toFixed(0)} м²`;
-  } else if (areaInSquareMeters < 1000000) {
+  if (areaInSquareMeters < 1000000) {
     const areaInHectares = areaInSquareMeters / 10000;
     return `${areaInHectares.toFixed(2)} га`;
   } else {
