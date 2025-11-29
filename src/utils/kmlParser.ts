@@ -132,12 +132,13 @@ export const convertKMLToPolygonObjects = (kmlPolygons: KMLPolygon[]) => {
       };
 
       const area = calculateArea(normalizedCoords);
+      const validArea = isNaN(area) || area <= 0 ? 0.1 : parseFloat(area.toFixed(2));
 
       return {
-        id: `kml-${Date.now()}-${index}-${polyIndex}`,
-        name: kmlPoly.name,
+        id: `kml-${Date.now()}-${index}-${polyIndex}-${Math.random().toString(36).substr(2, 9)}`,
+        name: kmlPoly.name || 'Безымянный объект',
         type: kmlPoly.properties.type || kmlPoly.properties.category || 'KML объект',
-        area: parseFloat(area.toFixed(2)),
+        area: validArea,
         population: kmlPoly.properties.population ? parseInt(kmlPoly.properties.population) : undefined,
         status: kmlPoly.properties.status || 'Импортирован',
         coordinates: normalizedCoords,

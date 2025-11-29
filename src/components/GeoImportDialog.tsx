@@ -90,11 +90,14 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
           const colors = ['#0EA5E9', '#8B5CF6', '#10B981', '#F97316', '#EAB308', '#EC4899'];
           const color = colors[(index + polyIndex) % colors.length];
 
+          const area = properties.area ? parseFloat(properties.area) : Math.random() * 100 + 10;
+          const validArea = isNaN(area) || area <= 0 ? 10.0 : parseFloat(area.toFixed(2));
+
           polygons.push({
-            id: `imported-${Date.now()}-${index}-${polyIndex}`,
+            id: `imported-${Date.now()}-${index}-${polyIndex}-${Math.random().toString(36).substr(2, 9)}`,
             name: properties.name || properties.title || `Объект ${index + 1}`,
             type: properties.type || properties.category || 'Импортированный объект',
-            area: properties.area || Math.random() * 100 + 10,
+            area: validArea,
             population: properties.population || properties.pop || undefined,
             status: properties.status || 'Импортирован',
             coordinates: normalizedCoords,
