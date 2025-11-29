@@ -13,9 +13,20 @@ export function calculatePolygonArea(coordinates: number[][]): number {
     closedCoordinates.push(closedCoordinates[0]);
   }
 
+  console.log('🔍 calculatePolygonArea input:', {
+    firstPoint: closedCoordinates[0],
+    pointsCount: closedCoordinates.length,
+    samplePoints: closedCoordinates.slice(0, 3)
+  });
+
   const polygon = turf.polygon([closedCoordinates]);
   const areaInSquareMeters = turf.area(polygon);
   const areaInHectares = areaInSquareMeters / 10000;
+  
+  console.log('📐 Area calculation:', {
+    areaM2: areaInSquareMeters.toFixed(2),
+    areaHa: areaInHectares.toFixed(4)
+  });
   
   return areaInHectares;
 }
