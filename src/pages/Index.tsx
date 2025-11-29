@@ -48,6 +48,7 @@ export default function Index() {
     handleRestoreFromTrash,
     handlePermanentDelete,
     handleEmptyTrash,
+    handleDeleteAll,
     handleImport,
     handleExportAll,
     handleExportFiltered,
@@ -110,6 +111,7 @@ export default function Index() {
         handleRestoreFromTrash={handleRestoreFromTrash}
         handlePermanentDelete={(id) => setConfirmPermanentDelete(id)}
         handleEmptyTrash={() => setConfirmEmptyTrash(true)}
+        handleDeleteAll={handleDeleteAll}
       />
 
       <main className="flex-1 flex flex-col">

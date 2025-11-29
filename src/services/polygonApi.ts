@@ -129,5 +129,16 @@ export const polygonApi = {
     if (!response.ok) {
       throw new Error('Failed to empty trash');
     }
+  },
+
+  async deleteAll(): Promise<void> {
+    const response = await fetch(`${API_URL}?action=delete_all`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete all polygons');
+    }
   }
 };

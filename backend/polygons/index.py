@@ -378,6 +378,32 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             action = event.get('queryStringParameters', {}).get('action', 'move_to_trash')
             polygon_id = event.get('queryStringParameters', {}).get('id')
             
+            if action == 'delete_all':
+                cur.execute("SELECT role FROM users WHERE id = '" + user_id.replace("'", "''") + "'")
+                user = cur.fetchone()
+                
+                if not user or user['role'] != 'admin':
+                    return {
+                        'statusCode': 403,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Only admin can delete all objects'})
+                    }
+                
+                cur.execute("SELECT COUNT(*) as count FROM polygon_objects")
+                count_result = cur.fetchone()
+                count = count_result['count'] if count_result else 0
+                
+                cur.execute("DELETE FROM polygon_objects")
+                conn.commit()
+                
+                log_action(cur, conn, user_id, 'delete_all', 'polygon', None, f'Deleted all objects: {count} items')
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'message': f'Deleted {count} objects'})
+                }
+            
             if action == 'empty_trash':
                 cur.execute("SELECT role FROM users WHERE id = '" + user_id.replace("'", "''") + "'")
                 user = cur.fetchone()

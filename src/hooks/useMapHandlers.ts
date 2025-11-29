@@ -88,6 +88,24 @@ export function useMapHandlers({
     }
   };
 
+  const handleDeleteAll = async () => {
+    try {
+      await polygonApi.deleteAll();
+      toast({
+        title: 'Все данные удалены',
+        description: 'Все объекты удалены из основной таблицы'
+      });
+      await loadPolygons();
+      setPolygonData([]);
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить все объекты',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const handleImport = async (importedPolygons: PolygonObject[]) => {
     console.log('🚀 handleImport called with polygons:', importedPolygons.length);
     importedPolygons.forEach((p, i) => {
@@ -314,6 +332,7 @@ export function useMapHandlers({
     handleRestoreFromTrash,
     handlePermanentDelete,
     handleEmptyTrash,
+    handleDeleteAll,
     handleImport,
     handleExportAll,
     handleExportFiltered,

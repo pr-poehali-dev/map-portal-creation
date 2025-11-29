@@ -36,6 +36,7 @@ interface MapSidebarProps {
   handleRestoreFromTrash: (id: string) => Promise<void>;
   handlePermanentDelete: (id: string) => void;
   handleEmptyTrash: () => void;
+  handleDeleteAll: () => void;
 }
 
 export default function MapSidebar({
@@ -62,7 +63,8 @@ export default function MapSidebar({
   loadTrash,
   handleRestoreFromTrash,
   handlePermanentDelete,
-  handleEmptyTrash
+  handleEmptyTrash,
+  handleDeleteAll
 }: MapSidebarProps) {
   useEffect(() => {
     if (viewingTrash && user?.role === 'admin') {
@@ -201,6 +203,18 @@ export default function MapSidebar({
         <TabsContent value="layers" className="flex-1 flex flex-col mt-0 min-h-0 data-[state=inactive]:hidden">
           <ScrollArea className="flex-1">
             <div className="p-4 space-y-4">
+              {user?.role === 'admin' && polygonData.length > 0 && (
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  className="w-full mb-4"
+                  onClick={handleDeleteAll}
+                >
+                  <Icon name="Trash2" size={16} className="mr-2" />
+                  Удалить все объекты ({polygonData.length})
+                </Button>
+              )}
+
               <div className="space-y-1 mb-6">
                 <Label className="text-xs text-sidebar-foreground/60">Прозрачность слоёв</Label>
                 <div className="flex items-center gap-3">
