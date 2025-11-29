@@ -1,3 +1,5 @@
+import { calculatePolygonArea } from './geoUtils';
+
 export interface KMLPolygon {
   name: string;
   description?: string;
@@ -123,17 +125,9 @@ export const convertKMLToPolygonObjects = (kmlPolygons: KMLPolygon[]) => {
 
       const color = colors[(index + polyIndex) % colors.length];
 
-      const calculateArea = (coordinates: [number, number][]) => {
-        let area = 0;
-        for (let i = 0; i < coordinates.length - 1; i++) {
-          area += coordinates[i][0] * coordinates[i + 1][1];
-          area -= coordinates[i + 1][0] * coordinates[i][1];
-        }
-        return Math.abs(area / 2) * 12.3;
-      };
-
-      const area = calculateArea(normalizedCoords);
-      const validArea = isNaN(area) || area < 0.01 ? 20.82 : parseFloat(area.toFixed(2));
+      const areaInHectares = calculatePolygonArea(normalizedCoords);
+      const areaInKm2 = areaInHectares / 100;
+      const validArea = areaInKm2 < 0.000001 ? 0.000001 : parseFloat(areaInKm2.toFixed(6));
 
       return {
         id: `kml-${Date.now()}-${index}-${polyIndex}-${Math.random().toString(36).substr(2, 9)}`,

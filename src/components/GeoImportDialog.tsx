@@ -98,35 +98,16 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
         const colors = ['#0EA5E9', '#8B5CF6', '#10B981', '#F97316', '#EAB308', '#EC4899'];
         const color = colors[index % colors.length];
 
-        let areaInKm2 = 0.01;
+        const coordinatesForCalculation = normalizedRings.length === 1 ? normalizedRings[0] : normalizedRings[0];
+        const calculatedAreaInHectares = calculatePolygonArea(coordinatesForCalculation);
+        const areaInKm2 = calculatedAreaInHectares / 100;
         
+        console.log(`  📏 Calculated area: ${formatArea(calculatedAreaInHectares)} (${areaInKm2.toFixed(6)} km²)`);
         if (properties.area) {
-          const rawArea = parseFloat(properties.area);
-          console.log(`  📏 Raw area from file: ${rawArea}`);
-          
-          // Определяем единицы измерения по диапазону значений
-          if (rawArea >= 10000) {
-            // Точно м² (участок 1 га = 10000 м²)
-            areaInKm2 = rawArea / 1000000;
-            console.log(`  → Detected as m² (${rawArea} m²), converted to km²: ${areaInKm2}`);
-          } else if (rawArea >= 100) {
-            // Средние значения 100-9999: вероятно м² (1-99 га)
-            areaInKm2 = rawArea / 1000000;
-            console.log(`  → Detected as m² (${rawArea} m²), converted to km²: ${areaInKm2}`);
-          } else if (rawArea >= 1) {
-            // 1-99: скорее всего га (типичный размер участка)
-            areaInKm2 = rawArea * 0.01;
-            console.log(`  → Detected as hectares (${rawArea} ha), converted to km²: ${areaInKm2}`);
-          } else {
-            // < 1: уже в км²
-            areaInKm2 = rawArea;
-            console.log(`  → Detected as km²: ${areaInKm2}`);
-          }
-        } else {
-          console.log(`  ⚠️ No area in properties, using default: ${areaInKm2} km²`);
+          console.log(`  ℹ️ Original area from file: ${properties.area} (ignored, using calculated)`);
         }
         
-        const validArea = isNaN(areaInKm2) || areaInKm2 < 0.000001 ? 0.01 : parseFloat(areaInKm2.toFixed(6));
+        const validArea = areaInKm2 < 0.000001 ? 0.000001 : parseFloat(areaInKm2.toFixed(6));
 
         const polygonObject = {
           id: `imported-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,

@@ -1,6 +1,7 @@
 import { PolygonObject } from '@/types/polygon';
 import { polygonApi } from '@/services/polygonApi';
 import { exportToGeoJSON } from '@/utils/geoExport';
+import { calculatePolygonArea } from '@/utils/geoUtils';
 import { useToast } from '@/hooks/use-toast';
 
 interface UseMapHandlersProps {
@@ -253,18 +254,28 @@ export function useMapHandlers({
 
   const handleSaveCadastralParcel = async (parcelData: { cadastralNumber: string; coordinates: [number, number]; area?: number; address?: string; category?: string }) => {
     try {
+      const coords: [number, number][] = [
+        [(parcelData.coordinates[1] + 180) / 360 * 100, (90 - parcelData.coordinates[0]) / 180 * 100],
+        [(parcelData.coordinates[1] + 180.001) / 360 * 100, (90 - parcelData.coordinates[0]) / 180 * 100],
+        [(parcelData.coordinates[1] + 180.001) / 360 * 100, (90 - parcelData.coordinates[0] - 0.001) / 180 * 100],
+        [(parcelData.coordinates[1] + 180) / 360 * 100, (90 - parcelData.coordinates[0] - 0.001) / 180 * 100]
+      ];
+
+      let areaInKm2: number;
+      if (parcelData.area) {
+        areaInKm2 = parcelData.area / 1000000;
+      } else {
+        const areaInHectares = calculatePolygonArea(coords);
+        areaInKm2 = areaInHectares / 100;
+      }
+
       const newPolygon: PolygonObject = {
         id: parcelData.cadastralNumber.replace(/:/g, '_'),
         name: parcelData.address || `Участок ${parcelData.cadastralNumber}`,
         type: 'Кадастровый участок',
-        area: parcelData.area ? parcelData.area / 10000 : 0.1,
+        area: areaInKm2,
         status: 'Активный',
-        coordinates: [
-          [(parcelData.coordinates[1] + 180) / 360 * 100, (90 - parcelData.coordinates[0]) / 180 * 100],
-          [(parcelData.coordinates[1] + 180.001) / 360 * 100, (90 - parcelData.coordinates[0]) / 180 * 100],
-          [(parcelData.coordinates[1] + 180.001) / 360 * 100, (90 - parcelData.coordinates[0] - 0.001) / 180 * 100],
-          [(parcelData.coordinates[1] + 180) / 360 * 100, (90 - parcelData.coordinates[0] - 0.001) / 180 * 100]
-        ],
+        coordinates: coords,
         color: '#F59E0B',
         layer: 'Кадастровые участки',
         visible: true,
@@ -292,26 +303,38 @@ export function useMapHandlers({
 
   const handleBulkImport = async (parcels: Array<{ cadastralNumber: string; coordinates: [number, number]; area?: number; address?: string; category?: string }>) => {
     try {
-      const newPolygons = parcels.map(parcelData => ({
-        id: parcelData.cadastralNumber.replace(/:/g, '_'),
-        name: parcelData.address || `Участок ${parcelData.cadastralNumber}`,
-        type: 'Кадастровый участок',
-        area: parcelData.area ? parcelData.area / 10000 : 0.1,
-        status: 'Активный',
-        coordinates: [
+      const newPolygons = parcels.map(parcelData => {
+        const coords: [number, number][] = [
           [(parcelData.coordinates[1] + 180) / 360 * 100, (90 - parcelData.coordinates[0]) / 180 * 100],
           [(parcelData.coordinates[1] + 180.001) / 360 * 100, (90 - parcelData.coordinates[0]) / 180 * 100],
           [(parcelData.coordinates[1] + 180.001) / 360 * 100, (90 - parcelData.coordinates[0] - 0.001) / 180 * 100],
           [(parcelData.coordinates[1] + 180) / 360 * 100, (90 - parcelData.coordinates[0] - 0.001) / 180 * 100]
-        ],
-        color: '#F59E0B',
-        layer: 'Кадастровые участки',
-        visible: true,
-        attributes: {
-          'Кадастровый номер': parcelData.cadastralNumber,
-          'Категория': parcelData.category || 'Земельный участок'
+        ];
+
+        let areaInKm2: number;
+        if (parcelData.area) {
+          areaInKm2 = parcelData.area / 1000000;
+        } else {
+          const areaInHectares = calculatePolygonArea(coords);
+          areaInKm2 = areaInHectares / 100;
         }
-      }));
+
+        return {
+          id: parcelData.cadastralNumber.replace(/:/g, '_'),
+          name: parcelData.address || `Участок ${parcelData.cadastralNumber}`,
+          type: 'Кадастровый участок',
+          area: areaInKm2,
+          status: 'Активный',
+          coordinates: coords,
+          color: '#F59E0B',
+          layer: 'Кадастровые участки',
+          visible: true,
+          attributes: {
+            'Кадастровый номер': parcelData.cadastralNumber,
+            'Категория': parcelData.category || 'Земельный участок'
+          }
+        };
+      });
 
       await Promise.all(newPolygons.map(polygon => polygonApi.create(polygon)));
       await loadPolygons();
