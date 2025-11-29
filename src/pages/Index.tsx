@@ -11,6 +11,7 @@ import { Slider } from '@/components/ui/slider';
 import Icon from '@/components/ui/icon';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import GeoImportDialog from '@/components/GeoImportDialog';
 import AttributeEditor from '@/components/AttributeEditor';
 import YandexMap from '@/components/YandexMap';
@@ -107,6 +108,8 @@ export default function Index() {
   const [isEditing, setIsEditing] = useState(false);
   const [useYandexMap, setUseYandexMap] = useState(true);
   const [showAllTrigger, setShowAllTrigger] = useState(0);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [objectToDelete, setObjectToDelete] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -218,11 +221,20 @@ export default function Index() {
     }
   };
 
-  const handleDeleteObject = async (id: string) => {
+  const handleDeleteClick = (id: string) => {
+    setObjectToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!objectToDelete) return;
+    
     try {
-      await polygonApi.delete(id);
-      setPolygonData(prev => prev.filter(obj => obj.id !== id));
+      await polygonApi.delete(objectToDelete);
+      setPolygonData(prev => prev.filter(obj => obj.id !== objectToDelete));
       setSelectedObject(null);
+      setDeleteDialogOpen(false);
+      setObjectToDelete(null);
       toast({
         title: 'Объект удалён',
         description: 'Объект успешно удалён из базы данных',
@@ -534,7 +546,7 @@ export default function Index() {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleDeleteObject(selectedObject.id)}
+                          onClick={() => handleDeleteClick(selectedObject.id)}
                         >
                           <Icon name="Trash2" size={16} className="mr-2" />
                           Удалить
@@ -646,6 +658,29 @@ export default function Index() {
         onOpenChange={setImportDialogOpen}
         onImport={handleImport}
       />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Подтвердите удаление</AlertDialogTitle>
+            <AlertDialogDescription>
+              Вы уверены, что хотите удалить объект "{selectedObject?.name}"? 
+              Это действие необратимо, данные будут удалены из базы данных.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setObjectToDelete(null)}>
+              Отмена
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
