@@ -292,7 +292,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "'" + body['type'].replace("'", "''") + "', "
                 "" + str(body['area']) + ", "
                 "" + (str(body['population']) if body.get('population') else 'NULL') + ", "
-                "'" + body['status'].replace("'", "''") + "', "
+                "" + ("'" + body['status'].replace("'", "''") + "'" if body.get('status') else 'NULL') + ", "
                 "'" + json.dumps(body['coordinates']).replace("'", "''") + "', "
                 "'" + body['color'].replace("'", "''") + "', "
                 "'" + body['layer'].replace("'", "''") + "', "
