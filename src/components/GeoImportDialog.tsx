@@ -72,40 +72,44 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
       const properties = feature.properties || {};
 
       if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
-        let coordinates: number[][][] = [];
+        let allCoordinates: number[][][] = [];
 
         if (geometryType === 'Polygon') {
-          coordinates = [feature.geometry.coordinates[0]];
+          allCoordinates = [feature.geometry.coordinates[0]];
         } else if (geometryType === 'MultiPolygon') {
-          coordinates = feature.geometry.coordinates.map((poly: any) => poly[0]);
+          allCoordinates = feature.geometry.coordinates.map((poly: any) => poly[0]);
         }
 
-        coordinates.forEach((coords, polyIndex) => {
-          const normalizedCoords = coords.map(([lng, lat]: [number, number]) => {
+        const normalizedMultiCoords = allCoordinates.map(coords => 
+          coords.map(([lng, lat]: [number, number]) => {
             const x = ((lng + 180) / 360) * 100;
             const y = ((90 - lat) / 180) * 100;
             return [x, y] as [number, number];
-          });
+          })
+        );
 
-          const colors = ['#0EA5E9', '#8B5CF6', '#10B981', '#F97316', '#EAB308', '#EC4899'];
-          const color = colors[(index + polyIndex) % colors.length];
+        const colors = ['#0EA5E9', '#8B5CF6', '#10B981', '#F97316', '#EAB308', '#EC4899'];
+        const color = colors[index % colors.length];
 
-          const area = properties.area ? parseFloat(properties.area) : Math.random() * 100 + 10;
-          const validArea = isNaN(area) || area < 0.01 ? 10.0 : parseFloat(area.toFixed(2));
+        const area = properties.area ? parseFloat(properties.area) : Math.random() * 100 + 10;
+        const validArea = isNaN(area) || area < 0.01 ? 10.0 : parseFloat(area.toFixed(2));
 
-          polygons.push({
-            id: `imported-${Date.now()}-${index}-${polyIndex}-${Math.random().toString(36).substr(2, 9)}`,
-            name: properties.name || properties.title || `Объект ${index + 1}`,
-            type: properties.type || properties.category || 'Импортированный объект',
-            area: validArea,
-            population: properties.population || properties.pop || undefined,
-            status: properties.status || 'Импортирован',
-            coordinates: normalizedCoords,
-            color: color,
-            layer: 'Импортированные данные',
-            visible: true,
-            attributes: properties
-          });
+        polygons.push({
+          id: `imported-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+          name: properties.name || properties.title || `Объект ${index + 1}`,
+          type: properties.type || properties.category || 'Импортированный объект',
+          area: validArea,
+          population: properties.population || properties.pop || undefined,
+          status: properties.status || 'Импортирован',
+          coordinates: normalizedMultiCoords.length === 1 ? normalizedMultiCoords[0] : normalizedMultiCoords,
+          color: color,
+          layer: 'Импортированные данные',
+          visible: true,
+          attributes: {
+            ...properties,
+            isMultiPolygon: geometryType === 'MultiPolygon',
+            partsCount: normalizedMultiCoords.length
+          }
         });
       }
     });

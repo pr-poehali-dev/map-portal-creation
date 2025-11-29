@@ -63,18 +63,34 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
     polygonObjectsRef.current.clear();
 
     polygons.forEach(polygon => {
-      const coordinates = polygon.coordinates.map(([x, y]) => {
-        const lng = (x / 100) * 360 - 180;
-        const lat = 90 - (y / 100) * 180;
-        return [lat, lng];
-      });
-
-      coordinates.push(coordinates[0]);
+      const isMultiPolygon = Array.isArray(polygon.coordinates[0]?.[0]?.[0]);
+      
+      let yandexCoordinates;
+      
+      if (isMultiPolygon) {
+        yandexCoordinates = polygon.coordinates.map((ring: any) => {
+          const coords = ring.map(([x, y]: [number, number]) => {
+            const lng = (x / 100) * 360 - 180;
+            const lat = 90 - (y / 100) * 180;
+            return [lat, lng];
+          });
+          coords.push(coords[0]);
+          return coords;
+        });
+      } else {
+        const coordinates = polygon.coordinates.map(([x, y]) => {
+          const lng = (x / 100) * 360 - 180;
+          const lat = 90 - (y / 100) * 180;
+          return [lat, lng];
+        });
+        coordinates.push(coordinates[0]);
+        yandexCoordinates = [coordinates];
+      }
 
       const isSelected = selectedPolygonId === polygon.id;
 
       const yandexPolygon = new window.ymaps.Polygon(
-        [coordinates],
+        yandexCoordinates,
         {
           hintContent: polygon.name,
           balloonContent: `
@@ -101,15 +117,21 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
           onPolygonClick(polygon);
         }
         
-        const polygonCoords = polygon.coordinates.map(([x, y]) => {
-          const lng = (x / 100) * 360 - 180;
-          const lat = 90 - (y / 100) * 180;
-          return [lat, lng];
-        });
+        const allCoords = isMultiPolygon 
+          ? polygon.coordinates.flatMap((ring: any) => ring.map(([x, y]: [number, number]) => {
+              const lng = (x / 100) * 360 - 180;
+              const lat = 90 - (y / 100) * 180;
+              return [lat, lng];
+            }))
+          : polygon.coordinates.map(([x, y]) => {
+              const lng = (x / 100) * 360 - 180;
+              const lat = 90 - (y / 100) * 180;
+              return [lat, lng];
+            });
         
-        if (polygonCoords.length > 0) {
+        if (allCoords.length > 0) {
           mapInstanceRef.current.setBounds(
-            window.ymaps.util.bounds.fromPoints(polygonCoords),
+            window.ymaps.util.bounds.fromPoints(allCoords),
             { checkZoomRange: true, zoomMargin: 100, duration: 300 }
           );
         }
@@ -120,13 +142,24 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
     });
 
     if (polygons.length > 0 && mapInstanceRef.current && isInitialLoadRef.current) {
-      const allCoordinates = polygons.flatMap(polygon => 
-        polygon.coordinates.map(([x, y]) => {
-          const lng = (x / 100) * 360 - 180;
-          const lat = 90 - (y / 100) * 180;
-          return [lat, lng];
-        })
-      );
+      const allCoordinates = polygons.flatMap(polygon => {
+        const isMulti = Array.isArray(polygon.coordinates[0]?.[0]?.[0]);
+        if (isMulti) {
+          return polygon.coordinates.flatMap((ring: any) => 
+            ring.map(([x, y]: [number, number]) => {
+              const lng = (x / 100) * 360 - 180;
+              const lat = 90 - (y / 100) * 180;
+              return [lat, lng];
+            })
+          );
+        } else {
+          return polygon.coordinates.map(([x, y]) => {
+            const lng = (x / 100) * 360 - 180;
+            const lat = 90 - (y / 100) * 180;
+            return [lat, lng];
+          });
+        }
+      });
 
       if (allCoordinates.length > 0) {
         mapInstanceRef.current.setBounds(
@@ -141,13 +174,24 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
   useEffect(() => {
     if (showAllTrigger === 0 || !mapInstanceRef.current || !window.ymaps || polygons.length === 0) return;
 
-    const allCoordinates = polygons.flatMap(polygon => 
-      polygon.coordinates.map(([x, y]) => {
-        const lng = (x / 100) * 360 - 180;
-        const lat = 90 - (y / 100) * 180;
-        return [lat, lng];
-      })
-    );
+    const allCoordinates = polygons.flatMap(polygon => {
+      const isMulti = Array.isArray(polygon.coordinates[0]?.[0]?.[0]);
+      if (isMulti) {
+        return polygon.coordinates.flatMap((ring: any) => 
+          ring.map(([x, y]: [number, number]) => {
+            const lng = (x / 100) * 360 - 180;
+            const lat = 90 - (y / 100) * 180;
+            return [lat, lng];
+          })
+        );
+      } else {
+        return polygon.coordinates.map(([x, y]) => {
+          const lng = (x / 100) * 360 - 180;
+          const lat = 90 - (y / 100) * 180;
+          return [lat, lng];
+        });
+      }
+    });
 
     if (allCoordinates.length > 0) {
       mapInstanceRef.current.setBounds(

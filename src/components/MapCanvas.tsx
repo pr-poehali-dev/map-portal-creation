@@ -46,34 +46,76 @@ export default function MapCanvas({
           <rect width="100" height="100" fill="url(#grid)" />
 
           {filteredData.map(item => {
-            const points = item.coordinates.map(coord => coord.join(',')).join(' ');
-            return (
-              <g
-                key={item.id}
-                className="cursor-pointer transition-all hover:opacity-100"
-                onClick={() => setSelectedObject(item)}
-                style={{ opacity: mapOpacity[0] / 100 }}
-              >
-                <polygon
-                  points={points}
-                  fill={item.color}
-                  fillOpacity={selectedObject?.id === item.id ? 0.6 : 0.4}
-                  stroke={item.color}
-                  strokeWidth={selectedObject?.id === item.id ? 0.4 : 0.2}
-                  className="transition-all"
-                />
-                <text
-                  x={(item.coordinates[0][0] + item.coordinates[2][0]) / 2}
-                  y={(item.coordinates[0][1] + item.coordinates[2][1]) / 2}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  className="text-[2px] font-semibold pointer-events-none"
-                  fill="white"
+            const isMultiPolygon = Array.isArray(item.coordinates[0]?.[0]?.[0]);
+            
+            if (isMultiPolygon) {
+              const allCoords = item.coordinates.flatMap((ring: any) => ring);
+              const centerX = allCoords.reduce((sum: number, coord: any) => sum + coord[0], 0) / allCoords.length;
+              const centerY = allCoords.reduce((sum: number, coord: any) => sum + coord[1], 0) / allCoords.length;
+              
+              return (
+                <g
+                  key={item.id}
+                  className="cursor-pointer transition-all hover:opacity-100"
+                  onClick={() => setSelectedObject(item)}
+                  style={{ opacity: mapOpacity[0] / 100 }}
                 >
-                  {item.name}
-                </text>
-              </g>
-            );
+                  {item.coordinates.map((ring: any, idx: number) => {
+                    const points = ring.map((coord: any) => coord.join(',')).join(' ');
+                    return (
+                      <polygon
+                        key={idx}
+                        points={points}
+                        fill={item.color}
+                        fillOpacity={selectedObject?.id === item.id ? 0.6 : 0.4}
+                        stroke={item.color}
+                        strokeWidth={selectedObject?.id === item.id ? 0.4 : 0.2}
+                        className="transition-all"
+                      />
+                    );
+                  })}
+                  <text
+                    x={centerX}
+                    y={centerY}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="text-[2px] font-semibold pointer-events-none"
+                    fill="white"
+                  >
+                    {item.name}
+                  </text>
+                </g>
+              );
+            } else {
+              const points = item.coordinates.map(coord => coord.join(',')).join(' ');
+              return (
+                <g
+                  key={item.id}
+                  className="cursor-pointer transition-all hover:opacity-100"
+                  onClick={() => setSelectedObject(item)}
+                  style={{ opacity: mapOpacity[0] / 100 }}
+                >
+                  <polygon
+                    points={points}
+                    fill={item.color}
+                    fillOpacity={selectedObject?.id === item.id ? 0.6 : 0.4}
+                    stroke={item.color}
+                    strokeWidth={selectedObject?.id === item.id ? 0.4 : 0.2}
+                    className="transition-all"
+                  />
+                  <text
+                    x={(item.coordinates[0][0] + item.coordinates[2][0]) / 2}
+                    y={(item.coordinates[0][1] + item.coordinates[2][1]) / 2}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="text-[2px] font-semibold pointer-events-none"
+                    fill="white"
+                  >
+                    {item.name}
+                  </text>
+                </g>
+              );
+            }
           })}
         </svg>
       )}
