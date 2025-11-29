@@ -187,9 +187,6 @@ export default function MapSidebar({
                         )}
                       </div>
                     </div>
-                    <Badge variant="secondary" className="text-xs">
-                      {item.status}
-                    </Badge>
                   </div>
                 </Card>
               ))}
