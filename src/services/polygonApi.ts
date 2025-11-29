@@ -12,7 +12,8 @@ function getAuthHeaders() {
 
 export const polygonApi = {
   async getAll(): Promise<PolygonObject[]> {
-    const response = await fetch(`${API_URL}?_t=${Date.now()}`, {
+    const cacheBust = `${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const response = await fetch(`${API_URL}?nocache=${cacheBust}`, {
       method: 'GET',
       headers: getAuthHeaders(),
       cache: 'no-store'
@@ -26,7 +27,8 @@ export const polygonApi = {
   },
 
   async getById(id: string): Promise<PolygonObject> {
-    const response = await fetch(`${API_URL}?id=${id}&_t=${Date.now()}`, {
+    const cacheBust = `${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const response = await fetch(`${API_URL}?id=${id}&nocache=${cacheBust}`, {
       method: 'GET',
       headers: getAuthHeaders(),
       cache: 'no-store'
