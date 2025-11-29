@@ -86,7 +86,7 @@ export default function ObjectDetailsSheet({
                     <span className="text-xs text-muted-foreground">Площадь</span>
                   </div>
                   <p className="text-2xl font-bold text-foreground">
-                    {formatArea(selectedObject.area * 100)}
+                    {formatArea(selectedObject.area)}
                   </p>
                 </Card>
 

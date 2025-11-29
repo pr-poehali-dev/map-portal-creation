@@ -15,19 +15,18 @@ export function calculatePolygonArea(coordinates: number[][]): number {
 
   const polygon = turf.polygon([closedCoordinates]);
   const areaInSquareMeters = turf.area(polygon);
-  const areaInHectares = areaInSquareMeters / 10000;
   
-  return areaInHectares;
+  return areaInSquareMeters;
 }
 
-export function formatArea(areaInHectares: number): string {
-  if (areaInHectares < 0.01) {
-    const areaM2 = areaInHectares * 10000;
-    return `${areaM2 < 10 ? areaM2.toFixed(2) : areaM2.toFixed(0)} м²`;
-  } else if (areaInHectares < 100) {
+export function formatArea(areaInSquareMeters: number): string {
+  if (areaInSquareMeters < 10000) {
+    return `${areaInSquareMeters < 10 ? areaInSquareMeters.toFixed(2) : areaInSquareMeters.toFixed(0)} м²`;
+  } else if (areaInSquareMeters < 1000000) {
+    const areaInHectares = areaInSquareMeters / 10000;
     return `${areaInHectares.toFixed(4).replace(/\.?0+$/, '')} га`;
   } else {
-    const areaKm2 = areaInHectares / 100;
+    const areaKm2 = areaInSquareMeters / 1000000;
     return `${areaKm2.toFixed(4).replace(/\.?0+$/, '')} км²`;
   }
 }

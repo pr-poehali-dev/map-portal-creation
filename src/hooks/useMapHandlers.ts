@@ -261,19 +261,18 @@ export function useMapHandlers({
         [(parcelData.coordinates[1] + 180) / 360 * 100, (90 - parcelData.coordinates[0] - 0.001) / 180 * 100]
       ];
 
-      let areaInKm2: number;
+      let areaInSquareMeters: number;
       if (parcelData.area) {
-        areaInKm2 = parcelData.area / 1000000;
+        areaInSquareMeters = parcelData.area;
       } else {
-        const areaInHectares = calculatePolygonArea(coords);
-        areaInKm2 = areaInHectares / 100;
+        areaInSquareMeters = calculatePolygonArea(coords);
       }
 
       const newPolygon: PolygonObject = {
         id: parcelData.cadastralNumber.replace(/:/g, '_'),
         name: parcelData.address || `Участок ${parcelData.cadastralNumber}`,
         type: 'Кадастровый участок',
-        area: areaInKm2,
+        area: areaInSquareMeters,
         status: 'Активный',
         coordinates: coords,
         color: '#F59E0B',
@@ -311,19 +310,18 @@ export function useMapHandlers({
           [(parcelData.coordinates[1] + 180) / 360 * 100, (90 - parcelData.coordinates[0] - 0.001) / 180 * 100]
         ];
 
-        let areaInKm2: number;
+        let areaInSquareMeters: number;
         if (parcelData.area) {
-          areaInKm2 = parcelData.area / 1000000;
+          areaInSquareMeters = parcelData.area;
         } else {
-          const areaInHectares = calculatePolygonArea(coords);
-          areaInKm2 = areaInHectares / 100;
+          areaInSquareMeters = calculatePolygonArea(coords);
         }
 
         return {
           id: parcelData.cadastralNumber.replace(/:/g, '_'),
           name: parcelData.address || `Участок ${parcelData.cadastralNumber}`,
           type: 'Кадастровый участок',
-          area: areaInKm2,
+          area: areaInSquareMeters,
           status: 'Активный',
           coordinates: coords,
           color: '#F59E0B',

@@ -88,15 +88,14 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
         }
 
         const coordinatesForCalculation = outerRings.length === 1 ? outerRings[0] : outerRings[0];
-        const calculatedAreaInHectares = calculatePolygonArea(coordinatesForCalculation);
-        const areaInKm2 = calculatedAreaInHectares / 100;
+        const areaInSquareMeters = calculatePolygonArea(coordinatesForCalculation);
         
-        console.log(`  📏 Calculated area: ${formatArea(calculatedAreaInHectares)} (${areaInKm2.toFixed(6)} km²)`);
+        console.log(`  📏 Calculated area: ${formatArea(areaInSquareMeters)} (${areaInSquareMeters.toFixed(2)} m²)`);
         if (properties.area) {
           console.log(`  ℹ️ Original area from file: ${properties.area} (ignored, using calculated)`);
         }
         
-        const validArea = areaInKm2 < 0.000001 ? 0.000001 : areaInKm2;
+        const validArea = areaInSquareMeters < 0.01 ? 0.01 : areaInSquareMeters;
 
         const normalizedRings = outerRings.map(ring => 
           ring.map(([lng, lat]: [number, number]) => {
@@ -128,7 +127,7 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
           }
         };
 
-        console.log(`  ✅ Created object with area: ${validArea} km² (${formatArea(calculatePolygonArea(normalizedRings[0] || normalizedRings))})`);
+        console.log(`  ✅ Created object with area: ${validArea} m² (${formatArea(validArea)})`);
         polygons.push(polygonObject);
       }
     });
