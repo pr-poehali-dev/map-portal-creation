@@ -208,6 +208,41 @@ export default function Index() {
     });
   };
 
+  const handleExportCadastralNumbers = () => {
+    const cadastralParcels = polygonData.filter(
+      obj => obj.type === 'Кадастровый участок' && 
+      obj.attributes['Кадастровый номер']
+    );
+
+    if (cadastralParcels.length === 0) {
+      toast({
+        title: 'Нет данных',
+        description: 'В базе нет кадастровых участков',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const cadastralNumbers = cadastralParcels
+      .map(obj => obj.attributes['Кадастровый номер'])
+      .join('\n');
+
+    const blob = new Blob([cadastralNumbers], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'кадастровые_номера.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: 'Экспорт завершён',
+      description: `Экспортировано номеров: ${cadastralParcels.length}`,
+    });
+  };
+
   const handleSaveObject = async (updatedObject: PolygonObject) => {
     try {
       await polygonApi.update(updatedObject.id, updatedObject);
@@ -561,6 +596,11 @@ export default function Index() {
                 <DropdownMenuItem onClick={handleExportFiltered}>
                   <Icon name="Filter" size={16} className="mr-2" />
                   Отфильтрованные ({filteredData.length})
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleExportCadastralNumbers}>
+                  <Icon name="FileText" size={16} className="mr-2" />
+                  Кадастровые номера (.txt)
                 </DropdownMenuItem>
                 {selectedObject && (
                   <>
