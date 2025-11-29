@@ -151,8 +151,8 @@ export default function MapSidebar({
             </div>
           </div>
           
-          <ScrollArea className="flex-1 px-4">
-            <div className="py-4 space-y-3">
+          <ScrollArea className="flex-1 h-full">
+            <div className="p-4 space-y-3">
               {filteredData.map(item => (
                 <Card
                   key={item.id}
