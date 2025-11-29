@@ -203,5 +203,25 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
     }, 5000);
   }, [cadastralSearchCoords]);
 
+  useEffect(() => {
+    if (!selectedPolygonId || !mapInstanceRef.current || !window.ymaps) return;
+
+    const selectedPolygon = polygons.find(p => p.id === selectedPolygonId);
+    if (!selectedPolygon) return;
+
+    const coordinates = selectedPolygon.coordinates.map(([x, y]) => {
+      const lng = (x / 100) * 360 - 180;
+      const lat = 90 - (y / 100) * 180;
+      return [lat, lng];
+    });
+
+    if (coordinates.length > 0) {
+      mapInstanceRef.current.setBounds(
+        window.ymaps.util.bounds.fromPoints(coordinates),
+        { checkZoomRange: true, zoomMargin: 100, duration: 300 }
+      );
+    }
+  }, [selectedPolygonId, polygons]);
+
   return <div ref={mapRef} className="w-full h-full" />;
 }
