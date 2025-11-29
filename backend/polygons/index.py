@@ -275,12 +275,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             if existing['user_id'] != user_id:
-                if not check_permission(cur, user_id, 'layer', existing['layer'], 'delete'):
-                    return {
-                        'statusCode': 403,
-                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                        'body': json.dumps({'error': 'No permission to delete this object'})
-                    }
+                cur.execute("SELECT role FROM users WHERE id = '" + user_id.replace("'", "''") + "'")
+                user = cur.fetchone()
+                
+                if not user or user['role'] != 'admin':
+                    if not check_permission(cur, user_id, 'layer', existing['layer'], 'delete'):
+                        return {
+                            'statusCode': 403,
+                            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                            'body': json.dumps({'error': 'No permission to delete this object'})
+                        }
             
             cur.execute(
                 "DELETE FROM polygon_objects WHERE id = '" + polygon_id.replace("'", "''") + "' RETURNING id"
