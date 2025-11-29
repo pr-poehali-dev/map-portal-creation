@@ -68,13 +68,28 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             action = event.get('queryStringParameters', {}).get('action')
             
             if action == 'users':
-                cur.execute("SELECT id, email, name, role, status, created_at FROM users ORDER BY created_at DESC")
+                cur.execute(
+                    "SELECT u.id, u.email, u.name, u.role, u.status, u.phone, u.position, "
+                    "u.company_id, u.created_at, c.name as company_name "
+                    "FROM users u LEFT JOIN companies c ON u.company_id = c.id "
+                    "ORDER BY u.created_at DESC"
+                )
                 users = cur.fetchall()
                 
                 return {
                     'statusCode': 200,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'body': json.dumps([dict(row) for row in users], default=json_serializer)
+                }
+            
+            elif action == 'companies':
+                cur.execute("SELECT * FROM companies ORDER BY created_at DESC")
+                companies = cur.fetchall()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps([dict(row) for row in companies], default=json_serializer)
                 }
             
             elif action == 'permissions':
@@ -123,6 +138,104 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         elif method == 'POST':
             body = json.loads(event.get('body', '{}'))
             action = body.get('action')
+            
+            if action == 'create_company':
+                company_id = body.get('id')
+                name = body.get('name')
+                description = body.get('description', '')
+                inn = body.get('inn', '')
+                address = body.get('address', '')
+                phone = body.get('phone', '')
+                email = body.get('email', '')
+                website = body.get('website', '')
+                
+                cur.execute(
+                    "INSERT INTO companies (id, name, description, inn, address, phone, email, website) "
+                    "VALUES ('" + company_id.replace("'", "''") + "', "
+                    "'" + name.replace("'", "''") + "', "
+                    "'" + description.replace("'", "''") + "', "
+                    "'" + inn.replace("'", "''") + "', "
+                    "'" + address.replace("'", "''") + "', "
+                    "'" + phone.replace("'", "''") + "', "
+                    "'" + email.replace("'", "''") + "', "
+                    "'" + website.replace("'", "''") + "') "
+                    "RETURNING *"
+                )
+                result = cur.fetchone()
+                
+                cur.execute(
+                    "INSERT INTO audit_log (user_id, action, resource_type, resource_id, details) "
+                    "VALUES ('" + admin_id.replace("'", "''") + "', 'create_company', 'company', "
+                    "'" + company_id.replace("'", "''") + "', 'Created company " + name + "')"
+                )
+                conn.commit()
+                
+                return {
+                    'statusCode': 201,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps(dict(result), default=json_serializer)
+                }
+            
+            elif action == 'update_company':
+                company_id = body.get('company_id')
+                name = body.get('name')
+                description = body.get('description', '')
+                inn = body.get('inn', '')
+                address = body.get('address', '')
+                phone = body.get('phone', '')
+                email = body.get('email', '')
+                website = body.get('website', '')
+                status = body.get('status')
+                
+                cur.execute(
+                    "UPDATE companies SET name = '" + name.replace("'", "''") + "', "
+                    "description = '" + description.replace("'", "''") + "', "
+                    "inn = '" + inn.replace("'", "''") + "', "
+                    "address = '" + address.replace("'", "''") + "', "
+                    "phone = '" + phone.replace("'", "''") + "', "
+                    "email = '" + email.replace("'", "''") + "', "
+                    "website = '" + website.replace("'", "''") + "', "
+                    "status = '" + status.replace("'", "''") + "', "
+                    "updated_at = CURRENT_TIMESTAMP "
+                    "WHERE id = '" + company_id.replace("'", "''") + "' RETURNING *"
+                )
+                result = cur.fetchone()
+                
+                cur.execute(
+                    "INSERT INTO audit_log (user_id, action, resource_type, resource_id, details) "
+                    "VALUES ('" + admin_id.replace("'", "''") + "', 'update_company', 'company', "
+                    "'" + company_id.replace("'", "''") + "', 'Updated company " + name + "')"
+                )
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps(dict(result), default=json_serializer)
+                }
+            
+            elif action == 'assign_company':
+                user_id = body.get('user_id')
+                company_id = body.get('company_id')
+                
+                cur.execute(
+                    "UPDATE users SET company_id = '" + company_id.replace("'", "''") + "' "
+                    "WHERE id = '" + user_id.replace("'", "''") + "' RETURNING id, email, name, company_id"
+                )
+                result = cur.fetchone()
+                
+                cur.execute(
+                    "INSERT INTO audit_log (user_id, action, resource_type, resource_id, details) "
+                    "VALUES ('" + admin_id.replace("'", "''") + "', 'assign_company', 'user', "
+                    "'" + user_id.replace("'", "''") + "', 'Assigned to company " + company_id + "')"
+                )
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps(dict(result), default=json_serializer)
+                }
             
             if action == 'update_role':
                 user_id = body.get('user_id')

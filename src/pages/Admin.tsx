@@ -22,7 +22,25 @@ interface User {
   name: string;
   role: string;
   status: string;
+  phone?: string;
+  position?: string;
+  company_id?: string;
+  company_name?: string;
   created_at: string;
+}
+
+interface Company {
+  id: string;
+  name: string;
+  description: string;
+  inn: string;
+  address: string;
+  phone: string;
+  email: string;
+  website: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface Permission {
@@ -52,10 +70,24 @@ export default function Admin() {
   const navigate = useNavigate();
   
   const [users, setUsers] = useState<User[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [layers, setLayers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const [companyDialog, setCompanyDialog] = useState(false);
+  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [newCompany, setNewCompany] = useState({
+    id: '',
+    name: '',
+    description: '',
+    inn: '',
+    address: '',
+    phone: '',
+    email: '',
+    website: ''
+  });
   
   const [permissionDialog, setPermissionDialog] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState('');
@@ -77,8 +109,9 @@ export default function Admin() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [usersRes, permsRes, auditRes, layersRes] = await Promise.all([
+      const [usersRes, companiesRes, permsRes, auditRes, layersRes] = await Promise.all([
         fetch(`${ADMIN_API}?action=users`, { headers: getAuthHeaders() }),
+        fetch(`${ADMIN_API}?action=companies`, { headers: getAuthHeaders() }),
         fetch(`${ADMIN_API}?action=permissions`, { headers: getAuthHeaders() }),
         fetch(`${ADMIN_API}?action=audit&limit=50`, { headers: getAuthHeaders() }),
         fetch(`${ADMIN_API}?action=layers`, { headers: getAuthHeaders() })
@@ -97,14 +130,16 @@ export default function Admin() {
         throw new Error('Failed to load data');
       }
 
-      const [usersData, permsData, auditData, layersData] = await Promise.all([
+      const [usersData, companiesData, permsData, auditData, layersData] = await Promise.all([
         usersRes.json(),
+        companiesRes.json(),
         permsRes.json(),
         auditRes.json(),
         layersRes.json()
       ]);
 
       setUsers(usersData);
+      setCompanies(companiesData);
       setPermissions(permsData);
       setAuditLogs(auditData);
       setLayers(layersData);
@@ -225,6 +260,107 @@ export default function Admin() {
     }
   };
 
+  const createCompany = async () => {
+    try {
+      const companyId = Date.now().toString();
+      const response = await fetch(ADMIN_API, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          action: 'create_company',
+          id: companyId,
+          ...newCompany
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to create company');
+
+      toast({
+        title: 'Компания создана',
+        description: 'Новая компания успешно добавлена'
+      });
+      
+      setCompanyDialog(false);
+      setNewCompany({ id: '', name: '', description: '', inn: '', address: '', phone: '', email: '', website: '' });
+      loadData();
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось создать компанию',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const updateCompany = async () => {
+    if (!editingCompany) return;
+    
+    try {
+      const response = await fetch(ADMIN_API, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          action: 'update_company',
+          company_id: editingCompany.id,
+          name: editingCompany.name,
+          description: editingCompany.description,
+          inn: editingCompany.inn,
+          address: editingCompany.address,
+          phone: editingCompany.phone,
+          email: editingCompany.email,
+          website: editingCompany.website,
+          status: editingCompany.status
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to update company');
+
+      toast({
+        title: 'Компания обновлена',
+        description: 'Информация о компании успешно изменена'
+      });
+      
+      setCompanyDialog(false);
+      setEditingCompany(null);
+      loadData();
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось обновить компанию',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const assignCompany = async (userId: string, companyId: string) => {
+    try {
+      const response = await fetch(ADMIN_API, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          action: 'assign_company',
+          user_id: userId,
+          company_id: companyId
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to assign company');
+
+      toast({
+        title: 'Компания назначена',
+        description: 'Пользователь успешно привязан к компании'
+      });
+      
+      loadData();
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось назначить компанию',
+        variant: 'destructive'
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -254,10 +390,14 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="users">
               <Icon name="Users" size={16} className="mr-2" />
               Пользователи
+            </TabsTrigger>
+            <TabsTrigger value="companies">
+              <Icon name="Building2" size={16} className="mr-2" />
+              Компании
             </TabsTrigger>
             <TabsTrigger value="permissions">
               <Icon name="Lock" size={16} className="mr-2" />
@@ -281,6 +421,7 @@ export default function Admin() {
                     <TableRow>
                       <TableHead>Пользователь</TableHead>
                       <TableHead>Email</TableHead>
+                      <TableHead>Компания</TableHead>
                       <TableHead>Роль</TableHead>
                       <TableHead>Статус</TableHead>
                       <TableHead>Дата регистрации</TableHead>
@@ -292,6 +433,19 @@ export default function Admin() {
                       <TableRow key={u.id}>
                         <TableCell className="font-medium">{u.name}</TableCell>
                         <TableCell>{u.email}</TableCell>
+                        <TableCell>
+                          <Select value={u.company_id || ''} onValueChange={(val) => assignCompany(u.id, val)}>
+                            <SelectTrigger className="w-40">
+                              <SelectValue placeholder="Не назначена" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">Не назначена</SelectItem>
+                              {companies.map((c) => (
+                                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
                         <TableCell>
                           <Select value={u.role} onValueChange={(val) => updateRole(u.id, val)}>
                             <SelectTrigger className="w-32">
@@ -377,6 +531,214 @@ export default function Admin() {
                                   Предоставить доступ
                                 </Button>
                               </div>
+                            </DialogContent>
+                          </Dialog>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="companies">
+            <Card className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Управление компаниями</h2>
+                <Dialog open={companyDialog && !editingCompany} onOpenChange={setCompanyDialog}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Icon name="Plus" size={16} className="mr-2" />
+                      Добавить компанию
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Новая компания</DialogTitle>
+                      <DialogDescription>Добавьте новую компанию в систему</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label>Название*</Label>
+                        <Input
+                          value={newCompany.name}
+                          onChange={(e) => setNewCompany({ ...newCompany, name: e.target.value })}
+                          placeholder="ООО Компания"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>ИНН</Label>
+                        <Input
+                          value={newCompany.inn}
+                          onChange={(e) => setNewCompany({ ...newCompany, inn: e.target.value })}
+                          placeholder="1234567890"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Описание</Label>
+                        <Input
+                          value={newCompany.description}
+                          onChange={(e) => setNewCompany({ ...newCompany, description: e.target.value })}
+                          placeholder="Краткое описание"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Адрес</Label>
+                        <Input
+                          value={newCompany.address}
+                          onChange={(e) => setNewCompany({ ...newCompany, address: e.target.value })}
+                          placeholder="г. Москва, ул. Примерная, д. 1"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Телефон</Label>
+                        <Input
+                          value={newCompany.phone}
+                          onChange={(e) => setNewCompany({ ...newCompany, phone: e.target.value })}
+                          placeholder="+7 (999) 123-45-67"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Email</Label>
+                        <Input
+                          type="email"
+                          value={newCompany.email}
+                          onChange={(e) => setNewCompany({ ...newCompany, email: e.target.value })}
+                          placeholder="info@company.ru"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Веб-сайт</Label>
+                        <Input
+                          value={newCompany.website}
+                          onChange={(e) => setNewCompany({ ...newCompany, website: e.target.value })}
+                          placeholder="https://company.ru"
+                        />
+                      </div>
+                      <Button onClick={createCompany} className="w-full">
+                        Создать компанию
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              <ScrollArea className="h-[600px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Название</TableHead>
+                      <TableHead>ИНН</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Телефон</TableHead>
+                      <TableHead>Статус</TableHead>
+                      <TableHead>Действия</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {companies.map((company) => (
+                      <TableRow key={company.id}>
+                        <TableCell className="font-medium">{company.name}</TableCell>
+                        <TableCell>{company.inn || '-'}</TableCell>
+                        <TableCell>{company.email || '-'}</TableCell>
+                        <TableCell>{company.phone || '-'}</TableCell>
+                        <TableCell>
+                          <Badge variant={company.status === 'active' ? 'default' : 'secondary'}>
+                            {company.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Dialog open={companyDialog && editingCompany?.id === company.id} onOpenChange={(open) => {
+                            setCompanyDialog(open);
+                            if (!open) setEditingCompany(null);
+                          }}>
+                            <DialogTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => setEditingCompany(company)}
+                              >
+                                <Icon name="Pencil" size={14} className="mr-2" />
+                                Изменить
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Редактировать компанию</DialogTitle>
+                                <DialogDescription>Измените информацию о компании</DialogDescription>
+                              </DialogHeader>
+                              {editingCompany && (
+                                <div className="space-y-4 py-4">
+                                  <div className="space-y-2">
+                                    <Label>Название*</Label>
+                                    <Input
+                                      value={editingCompany.name}
+                                      onChange={(e) => setEditingCompany({ ...editingCompany, name: e.target.value })}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>ИНН</Label>
+                                    <Input
+                                      value={editingCompany.inn}
+                                      onChange={(e) => setEditingCompany({ ...editingCompany, inn: e.target.value })}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Описание</Label>
+                                    <Input
+                                      value={editingCompany.description}
+                                      onChange={(e) => setEditingCompany({ ...editingCompany, description: e.target.value })}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Адрес</Label>
+                                    <Input
+                                      value={editingCompany.address}
+                                      onChange={(e) => setEditingCompany({ ...editingCompany, address: e.target.value })}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Телефон</Label>
+                                    <Input
+                                      value={editingCompany.phone}
+                                      onChange={(e) => setEditingCompany({ ...editingCompany, phone: e.target.value })}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Email</Label>
+                                    <Input
+                                      type="email"
+                                      value={editingCompany.email}
+                                      onChange={(e) => setEditingCompany({ ...editingCompany, email: e.target.value })}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Веб-сайт</Label>
+                                    <Input
+                                      value={editingCompany.website}
+                                      onChange={(e) => setEditingCompany({ ...editingCompany, website: e.target.value })}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Статус</Label>
+                                    <Select 
+                                      value={editingCompany.status} 
+                                      onValueChange={(val) => setEditingCompany({ ...editingCompany, status: val })}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="active">Active</SelectItem>
+                                        <SelectItem value="blocked">Blocked</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <Button onClick={updateCompany} className="w-full">
+                                    Сохранить изменения
+                                  </Button>
+                                </div>
+                              )}
                             </DialogContent>
                           </Dialog>
                         </TableCell>
