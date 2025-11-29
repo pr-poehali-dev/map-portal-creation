@@ -104,6 +104,7 @@ export default function Index() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [useYandexMap, setUseYandexMap] = useState(true);
+  const [showAllTrigger, setShowAllTrigger] = useState(0);
   const { toast } = useToast();
 
   const filteredData = polygonData.filter(item => {
@@ -333,17 +334,13 @@ export default function Index() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Icon name="ZoomIn" size={16} className="mr-2" />
-              Увеличить
-            </Button>
-            <Button variant="outline" size="sm">
-              <Icon name="ZoomOut" size={16} className="mr-2" />
-              Уменьшить
-            </Button>
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowAllTrigger(prev => prev + 1)}
+            >
               <Icon name="Maximize" size={16} className="mr-2" />
-              Центрировать
+              Показать все
             </Button>
             
             <Button
@@ -392,6 +389,7 @@ export default function Index() {
               selectedPolygonId={selectedObject?.id}
               onPolygonClick={setSelectedObject}
               opacity={mapOpacity[0] / 100}
+              showAllTrigger={showAllTrigger}
             />
           ) : (
             <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">

@@ -6,6 +6,7 @@ interface YandexMapProps {
   selectedPolygonId?: string | null;
   onPolygonClick?: (polygon: PolygonObject) => void;
   opacity?: number;
+  showAllTrigger?: number;
 }
 
 declare global {
@@ -14,7 +15,7 @@ declare global {
   }
 }
 
-export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick, opacity = 0.8 }: YandexMapProps) {
+export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick, opacity = 0.8, showAllTrigger = 0 }: YandexMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const polygonObjectsRef = useRef<Map<string, any>>(new Map());
@@ -139,6 +140,25 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
       }
     }
   }, [polygons, selectedPolygonId, opacity, onPolygonClick]);
+
+  useEffect(() => {
+    if (showAllTrigger === 0 || !mapInstanceRef.current || !window.ymaps || polygons.length === 0) return;
+
+    const allCoordinates = polygons.flatMap(polygon => 
+      polygon.coordinates.map(([x, y]) => {
+        const lng = (x / 100) * 360 - 180;
+        const lat = 90 - (y / 100) * 180;
+        return [lat, lng];
+      })
+    );
+
+    if (allCoordinates.length > 0) {
+      mapInstanceRef.current.setBounds(
+        window.ymaps.util.bounds.fromPoints(allCoordinates),
+        { checkZoomRange: true, zoomMargin: 50, duration: 300 }
+      );
+    }
+  }, [showAllTrigger, polygons]);
 
   return <div ref={mapRef} className="w-full h-full" />;
 }
