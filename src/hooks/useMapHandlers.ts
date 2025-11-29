@@ -110,14 +110,15 @@ export function useMapHandlers({
     console.log('🚀 handleImport called with polygons:', importedPolygons.length);
     importedPolygons.forEach((p, i) => {
       console.log(`  ${i + 1}. ${p.name} (id: ${p.id})`);
-      console.log(`     coordinates type: ${Array.isArray(p.coordinates[0]?.[0]?.[0]) ? 'MultiPolygon' : 'Polygon'}`);
-      console.log(`     rings count: ${Array.isArray(p.coordinates[0]?.[0]?.[0]) ? p.coordinates.length : 1}`);
     });
     
     try {
-      await Promise.all(importedPolygons.map(polygon => polygonApi.create(polygon)));
-      console.log('✅ All polygons saved to database');
-      await loadPolygons();
+      const savedPolygons = await Promise.all(
+        importedPolygons.map(polygon => polygonApi.create(polygon))
+      );
+      console.log('✅ Saved polygons:', savedPolygons.length);
+      
+      setPolygonData(prev => [...prev, ...savedPolygons]);
       
       const newLayers = Array.from(new Set(importedPolygons.map(p => p.layer)));
       setLayerVisibility(prev => {
@@ -132,7 +133,7 @@ export function useMapHandlers({
       
       toast({
         title: 'Импорт завершён',
-        description: `Добавлено объектов: ${importedPolygons.length}`
+        description: `Добавлено объектов: ${savedPolygons.length}`
       });
     } catch (error) {
       console.error('❌ Import error:', error);
