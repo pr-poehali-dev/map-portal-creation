@@ -101,13 +101,26 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
         if (onPolygonClick) {
           onPolygonClick(polygon);
         }
+        
+        const polygonCoords = polygon.coordinates.map(([x, y]) => {
+          const lng = (x / 100) * 360 - 180;
+          const lat = 90 - (y / 100) * 180;
+          return [lat, lng];
+        });
+        
+        if (polygonCoords.length > 0) {
+          mapInstanceRef.current.setBounds(
+            window.ymaps.util.bounds.fromPoints(polygonCoords),
+            { checkZoomRange: true, zoomMargin: 100, duration: 300 }
+          );
+        }
       });
 
       mapInstanceRef.current.geoObjects.add(yandexPolygon);
       polygonObjectsRef.current.set(polygon.id, yandexPolygon);
     });
 
-    if (polygons.length > 0 && mapInstanceRef.current) {
+    if (polygons.length > 0 && mapInstanceRef.current && !selectedPolygonId) {
       const allCoordinates = polygons.flatMap(polygon => 
         polygon.coordinates.map(([x, y]) => {
           const lng = (x / 100) * 360 - 180;
