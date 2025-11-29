@@ -252,6 +252,45 @@ export default function Index() {
     }
   };
 
+  const handleSaveCadastralParcel = async (parcelData: { cadastralNumber: string; coordinates: [number, number]; area?: number; address?: string; category?: string }) => {
+    try {
+      const newPolygon: PolygonObject = {
+        id: parcelData.cadastralNumber.replace(/:/g, '_'),
+        name: parcelData.address || `Участок ${parcelData.cadastralNumber}`,
+        type: 'Кадастровый участок',
+        area: parcelData.area ? parcelData.area / 10000 : 0.1,
+        status: 'Активный',
+        coordinates: [
+          [(parcelData.coordinates[1] + 180) / 360 * 100, (90 - parcelData.coordinates[0]) / 180 * 100],
+          [(parcelData.coordinates[1] + 180.001) / 360 * 100, (90 - parcelData.coordinates[0]) / 180 * 100],
+          [(parcelData.coordinates[1] + 180.001) / 360 * 100, (90 - parcelData.coordinates[0] - 0.001) / 180 * 100],
+          [(parcelData.coordinates[1] + 180) / 360 * 100, (90 - parcelData.coordinates[0] - 0.001) / 180 * 100]
+        ],
+        color: '#F59E0B',
+        layer: 'Кадастровые участки',
+        visible: true,
+        attributes: {
+          'Кадастровый номер': parcelData.cadastralNumber,
+          'Категория': parcelData.category || 'Земельный участок'
+        }
+      };
+
+      await polygonApi.create(newPolygon);
+      await loadPolygons();
+
+      setLayerVisibility(prev => ({
+        ...prev,
+        'Кадастровые участки': true
+      }));
+    } catch (error) {
+      toast({
+        title: 'Ошибка сохранения',
+        description: 'Не удалось сохранить участок в базу данных',
+        variant: 'destructive'
+      });
+    }
+  };
+
   return (
     <div className="flex h-screen bg-background dark">
       <aside className="w-80 border-r border-sidebar-border bg-sidebar-background flex flex-col">
@@ -693,6 +732,7 @@ export default function Index() {
           setCadastralSearchCoords(coords);
           setShowCadastralLayer(true);
         }}
+        onSaveParcel={handleSaveCadastralParcel}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
