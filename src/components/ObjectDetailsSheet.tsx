@@ -106,12 +106,6 @@ export default function ObjectDetailsSheet({
               <div>
                 <Label className="text-sm font-semibold mb-3 block">Основная информация</Label>
                 <Card className="p-4 space-y-3">
-                  {selectedObject.status && (
-                    <div className="flex justify-between items-center gap-4">
-                      <span className="text-sm text-muted-foreground flex-shrink-0">Статус</span>
-                      <Badge className="text-xs">{selectedObject.status}</Badge>
-                    </div>
-                  )}
                   <div className="flex justify-between items-center gap-4">
                     <span className="text-sm text-muted-foreground flex-shrink-0">Слой</span>
                     <span className="text-sm font-medium text-foreground text-right break-words">{selectedObject.layer}</span>
