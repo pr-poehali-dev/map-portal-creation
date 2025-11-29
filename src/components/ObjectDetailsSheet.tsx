@@ -33,40 +33,40 @@ export default function ObjectDetailsSheet({
       setSelectedObject(null);
       setIsEditing(false);
     }}>
-      <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+      <SheetContent side="right" className="w-[400px] sm:w-[540px] overflow-y-auto">
         <SheetHeader>
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
-              <div
-                className="w-6 h-6 rounded-lg"
-                style={{ backgroundColor: selectedObject.color }}
-              />
-              <div>
-                <SheetTitle className="text-2xl">{selectedObject.name}</SheetTitle>
-                <SheetDescription>{selectedObject.type}</SheetDescription>
-              </div>
+          <div className="flex items-start gap-3 mb-2">
+            <div
+              className="w-6 h-6 rounded-lg flex-shrink-0"
+              style={{ backgroundColor: selectedObject.color }}
+            />
+            <div className="flex-1 min-w-0">
+              <SheetTitle className="text-2xl break-words">{selectedObject.name}</SheetTitle>
+              <SheetDescription className="break-words">{selectedObject.type}</SheetDescription>
             </div>
-            {!isEditing && (
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                >
-                  <Icon name="Edit" size={16} className="mr-2" />
-                  Редактировать
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => handleDeleteClick(selectedObject.id)}
-                >
-                  <Icon name="Trash2" size={16} className="mr-2" />
-                  Удалить
-                </Button>
-              </div>
-            )}
           </div>
+          {!isEditing && (
+            <div className="flex gap-2 flex-wrap mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditing(true)}
+                className="flex-1 min-w-[140px]"
+              >
+                <Icon name="Edit" size={16} className="mr-2" />
+                Редактировать
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => handleDeleteClick(selectedObject.id)}
+                className="flex-1 min-w-[100px]"
+              >
+                <Icon name="Trash2" size={16} className="mr-2" />
+                Удалить
+              </Button>
+            </div>
+          )}
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
@@ -103,17 +103,17 @@ export default function ObjectDetailsSheet({
               <div>
                 <Label className="text-sm font-semibold mb-3 block">Основная информация</Label>
                 <Card className="p-4 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Статус</span>
-                    <Badge>{selectedObject.status}</Badge>
+                  <div className="flex justify-between items-center gap-4">
+                    <span className="text-sm text-muted-foreground flex-shrink-0">Статус</span>
+                    <Badge className="text-xs">{selectedObject.status}</Badge>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Слой</span>
-                    <span className="text-sm font-medium text-foreground">{selectedObject.layer}</span>
+                  <div className="flex justify-between items-center gap-4">
+                    <span className="text-sm text-muted-foreground flex-shrink-0">Слой</span>
+                    <span className="text-sm font-medium text-foreground text-right break-words">{selectedObject.layer}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">ID объекта</span>
-                    <code className="text-xs bg-muted px-2 py-1 rounded">{selectedObject.id}</code>
+                  <div className="flex justify-between items-start gap-4">
+                    <span className="text-sm text-muted-foreground flex-shrink-0">ID объекта</span>
+                    <code className="text-xs bg-muted px-2 py-1 rounded break-all text-right max-w-[200px]">{selectedObject.id}</code>
                   </div>
                 </Card>
               </div>
@@ -122,9 +122,9 @@ export default function ObjectDetailsSheet({
                 <Label className="text-sm font-semibold mb-3 block">Атрибуты</Label>
                 <Card className="p-4 space-y-3">
                   {Object.entries(selectedObject.attributes).map(([key, value]) => (
-                    <div key={key} className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground capitalize">{key}</span>
-                      <span className="text-sm font-medium text-foreground">{value}</span>
+                    <div key={key} className="flex justify-between items-start gap-4">
+                      <span className="text-sm text-muted-foreground capitalize flex-shrink-0">{key}</span>
+                      <span className="text-sm font-medium text-foreground text-right break-words">{value}</span>
                     </div>
                   ))}
                 </Card>
