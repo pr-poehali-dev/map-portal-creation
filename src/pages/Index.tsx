@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import GeoImportDialog from '@/components/GeoImportDialog';
+import CadastralSearch from '@/components/CadastralSearch';
 import AttributeEditor from '@/components/AttributeEditor';
 import YandexMap from '@/components/YandexMap';
 import { PolygonObject } from '@/types/polygon';
@@ -111,6 +112,8 @@ export default function Index() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [objectToDelete, setObjectToDelete] = useState<string | null>(null);
   const [showCadastralLayer, setShowCadastralLayer] = useState(false);
+  const [cadastralSearchOpen, setCadastralSearchOpen] = useState(false);
+  const [cadastralSearchCoords, setCadastralSearchCoords] = useState<[number, number] | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -435,14 +438,24 @@ export default function Index() {
             </Button>
             
             {useYandexMap && (
-              <Button
-                variant={showCadastralLayer ? "default" : "outline"}
-                size="sm"
-                onClick={() => setShowCadastralLayer(!showCadastralLayer)}
-              >
-                <Icon name="Map" size={16} className="mr-2" />
-                Кадастр
-              </Button>
+              <>
+                <Button
+                  variant={showCadastralLayer ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowCadastralLayer(!showCadastralLayer)}
+                >
+                  <Icon name="Map" size={16} className="mr-2" />
+                  Кадастр
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCadastralSearchOpen(true)}
+                >
+                  <Icon name="Search" size={16} className="mr-2" />
+                  Поиск участка
+                </Button>
+              </>
             )}
             
             <DropdownMenu>
@@ -484,6 +497,7 @@ export default function Index() {
               opacity={mapOpacity[0] / 100}
               showAllTrigger={showAllTrigger}
               showCadastralLayer={showCadastralLayer}
+              cadastralSearchCoords={cadastralSearchCoords}
             />
           ) : (
             <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
@@ -670,6 +684,15 @@ export default function Index() {
         open={importDialogOpen}
         onOpenChange={setImportDialogOpen}
         onImport={handleImport}
+      />
+
+      <CadastralSearch
+        open={cadastralSearchOpen}
+        onOpenChange={setCadastralSearchOpen}
+        onSearchResult={(coords) => {
+          setCadastralSearchCoords(coords);
+          setShowCadastralLayer(true);
+        }}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

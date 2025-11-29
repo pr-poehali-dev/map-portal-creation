@@ -8,6 +8,7 @@ interface YandexMapProps {
   opacity?: number;
   showAllTrigger?: number;
   showCadastralLayer?: boolean;
+  cadastralSearchCoords?: [number, number] | null;
 }
 
 declare global {
@@ -16,7 +17,7 @@ declare global {
   }
 }
 
-export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick, opacity = 0.8, showAllTrigger = 0, showCadastralLayer = false }: YandexMapProps) {
+export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick, opacity = 0.8, showAllTrigger = 0, showCadastralLayer = false, cadastralSearchCoords = null }: YandexMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const polygonObjectsRef = useRef<Map<string, any>>(new Map());
@@ -177,6 +178,30 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
       }
     }
   }, [showCadastralLayer]);
+
+  useEffect(() => {
+    if (!cadastralSearchCoords || !mapInstanceRef.current) return;
+
+    mapInstanceRef.current.setCenter(cadastralSearchCoords, 17, {
+      duration: 500
+    });
+
+    const placemark = new window.ymaps.Placemark(
+      cadastralSearchCoords,
+      {
+        hintContent: 'Найденный участок'
+      },
+      {
+        preset: 'islands#redDotIcon'
+      }
+    );
+
+    mapInstanceRef.current.geoObjects.add(placemark);
+
+    setTimeout(() => {
+      mapInstanceRef.current.geoObjects.remove(placemark);
+    }, 5000);
+  }, [cadastralSearchCoords]);
 
   return <div ref={mapRef} className="w-full h-full" />;
 }
