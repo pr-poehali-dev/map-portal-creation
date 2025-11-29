@@ -33,9 +33,9 @@ export function formatArea(areaInSquareMeters: number): string {
     return `${areaInSquareMeters < 10 ? areaInSquareMeters.toFixed(2) : areaInSquareMeters.toFixed(0)} м²`;
   } else if (areaInSquareMeters < 1000000) {
     const areaInHectares = areaInSquareMeters / 10000;
-    return `${areaInHectares.toFixed(4).replace(/\.?0+$/, '')} га`;
+    return `${areaInHectares.toFixed(2)} га`;
   } else {
     const areaKm2 = areaInSquareMeters / 1000000;
-    return `${areaKm2.toFixed(4).replace(/\.?0+$/, '')} км²`;
+    return `${areaKm2.toFixed(2)} км²`;
   }
 }
