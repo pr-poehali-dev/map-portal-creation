@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import Icon from '@/components/ui/icon';
 import AttributeEditor from '@/components/AttributeEditor';
 import { PolygonObject } from '@/types/polygon';
+import { calculatePolygonArea, formatArea } from '@/utils/geoUtils';
 
 interface ObjectDetailsSheetProps {
   selectedObject: PolygonObject | null;
@@ -84,7 +85,9 @@ export default function ObjectDetailsSheet({
                     <Icon name="Maximize2" size={16} className="text-primary" />
                     <span className="text-xs text-muted-foreground">Площадь</span>
                   </div>
-                  <p className="text-2xl font-bold text-foreground">{(selectedObject.area * 100).toFixed(2)} га</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {formatArea(calculatePolygonArea(selectedObject.coordinates))}
+                  </p>
                 </Card>
 
                 {selectedObject.population && (

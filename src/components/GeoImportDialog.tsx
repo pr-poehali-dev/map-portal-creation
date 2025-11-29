@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 import { parseKML, convertKMLToPolygonObjects } from '@/utils/kmlParser';
+import { calculatePolygonArea, formatArea } from '@/utils/geoUtils';
 
 interface GeoImportDialogProps {
   open: boolean;
@@ -146,7 +147,7 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
           }
         };
 
-        console.log(`  ✅ Created object with area: ${validArea} km² (${(validArea * 100).toFixed(2)} ha)`);
+        console.log(`  ✅ Created object with area: ${validArea} km² (${formatArea(calculatePolygonArea(normalizedRings[0] || normalizedRings))})`);
         polygons.push(polygonObject);
       }
     });
