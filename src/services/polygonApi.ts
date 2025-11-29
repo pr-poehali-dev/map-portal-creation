@@ -12,9 +12,14 @@ function getAuthHeaders() {
 
 export const polygonApi = {
   async getAll(): Promise<PolygonObject[]> {
-    const response = await fetch(API_URL, {
+    const response = await fetch(`${API_URL}?_t=${Date.now()}`, {
       method: 'GET',
-      headers: getAuthHeaders()
+      headers: {
+        ...getAuthHeaders(),
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
 
     if (!response.ok) {
@@ -25,9 +30,14 @@ export const polygonApi = {
   },
 
   async getById(id: string): Promise<PolygonObject> {
-    const response = await fetch(`${API_URL}?id=${id}`, {
+    const response = await fetch(`${API_URL}?id=${id}&_t=${Date.now()}`, {
       method: 'GET',
-      headers: getAuthHeaders()
+      headers: {
+        ...getAuthHeaders(),
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
 
     if (!response.ok) {
