@@ -107,18 +107,28 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             password_hash = hash_password(password)
+            print(f"Login attempt: email={email}, password_hash={password_hash}")
             
             cur.execute(
-                "SELECT id, email, name, role, status FROM users WHERE email = '" + email.replace("'", "''") + "' "
-                "AND password_hash = '" + password_hash + "'"
+                "SELECT id, email, name, role, status, password_hash as stored_hash FROM users WHERE email = '" + email.replace("'", "''") + "'"
             )
             user = cur.fetchone()
             
             if not user:
+                print(f"User not found: {email}")
                 return {
                     'statusCode': 401,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'error': 'Invalid credentials'})
+                    'body': json.dumps({'error': 'Invalid credentials - user not found'})
+                }
+            
+            print(f"User found: {user['email']}, stored_hash={user['stored_hash']}, computed_hash={password_hash}, match={user['stored_hash'] == password_hash}")
+            
+            if user['stored_hash'] != password_hash:
+                return {
+                    'statusCode': 401,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Invalid credentials - wrong password'})
                 }
             
             if user.get('status') == 'blocked' or user.get('status') == 'suspended':
