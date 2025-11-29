@@ -114,6 +114,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if method == 'GET':
             polygon_id = event.get('queryStringParameters', {}).get('id')
             
+            print(f"DEBUG GET: user_id={user_id}, polygon_id={polygon_id}")
+            
             if polygon_id:
                 cur.execute(
                     "SELECT * FROM polygon_objects WHERE id = '" + polygon_id.replace("'", "''") + "'"
@@ -144,12 +146,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 cur.execute("SELECT * FROM polygon_objects ORDER BY created_at DESC")
                 all_results = cur.fetchall()
                 
+                print(f"DEBUG: Total polygons in DB: {len(all_results)}")
+                if all_results:
+                    print(f"DEBUG: First polygon user_id: {all_results[0].get('user_id')}")
+                
                 filtered_results = []
                 for row in all_results:
-                    if row['user_id'] == user_id:
+                    if row['user_id'] == user_id or row['user_id'] is None:
                         filtered_results.append(dict(row))
                     elif check_permission(cur, user_id, 'layer', row['layer'], 'read'):
                         filtered_results.append(dict(row))
+                
+                print(f"DEBUG: Filtered polygons: {len(filtered_results)}")
                 
                 return {
                     'statusCode': 200,
