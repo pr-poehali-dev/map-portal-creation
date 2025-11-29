@@ -14,6 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import GeoImportDialog from '@/components/GeoImportDialog';
 import CadastralSearch from '@/components/CadastralSearch';
+import BulkCadastralImport from '@/components/BulkCadastralImport';
 import AttributeEditor from '@/components/AttributeEditor';
 import YandexMap from '@/components/YandexMap';
 import { PolygonObject } from '@/types/polygon';
@@ -114,6 +115,7 @@ export default function Index() {
   const [showCadastralLayer, setShowCadastralLayer] = useState(false);
   const [cadastralSearchOpen, setCadastralSearchOpen] = useState(false);
   const [cadastralSearchCoords, setCadastralSearchCoords] = useState<[number, number] | null>(null);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -286,6 +288,45 @@ export default function Index() {
       toast({
         title: 'Ошибка сохранения',
         description: 'Не удалось сохранить участок в базу данных',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleBulkImport = async (parcels: Array<{ cadastralNumber: string; coordinates: [number, number]; area?: number; address?: string; category?: string }>) => {
+    try {
+      const newPolygons = parcels.map(parcelData => ({
+        id: parcelData.cadastralNumber.replace(/:/g, '_'),
+        name: parcelData.address || `Участок ${parcelData.cadastralNumber}`,
+        type: 'Кадастровый участок',
+        area: parcelData.area ? parcelData.area / 10000 : 0.1,
+        status: 'Активный',
+        coordinates: [
+          [(parcelData.coordinates[1] + 180) / 360 * 100, (90 - parcelData.coordinates[0]) / 180 * 100],
+          [(parcelData.coordinates[1] + 180.001) / 360 * 100, (90 - parcelData.coordinates[0]) / 180 * 100],
+          [(parcelData.coordinates[1] + 180.001) / 360 * 100, (90 - parcelData.coordinates[0] - 0.001) / 180 * 100],
+          [(parcelData.coordinates[1] + 180) / 360 * 100, (90 - parcelData.coordinates[0] - 0.001) / 180 * 100]
+        ],
+        color: '#F59E0B',
+        layer: 'Кадастровые участки',
+        visible: true,
+        attributes: {
+          'Кадастровый номер': parcelData.cadastralNumber,
+          'Категория': parcelData.category || 'Земельный участок'
+        }
+      }));
+
+      await Promise.all(newPolygons.map(polygon => polygonApi.create(polygon)));
+      await loadPolygons();
+
+      setLayerVisibility(prev => ({
+        ...prev,
+        'Кадастровые участки': true
+      }));
+    } catch (error) {
+      toast({
+        title: 'Ошибка сохранения',
+        description: 'Не удалось сохранить участки в базу данных',
         variant: 'destructive'
       });
     }
@@ -493,6 +534,14 @@ export default function Index() {
                 >
                   <Icon name="Search" size={16} className="mr-2" />
                   Поиск участка
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setBulkImportOpen(true)}
+                >
+                  <Icon name="Upload" size={16} className="mr-2" />
+                  Массовый импорт
                 </Button>
               </>
             )}
@@ -733,6 +782,12 @@ export default function Index() {
           setShowCadastralLayer(true);
         }}
         onSaveParcel={handleSaveCadastralParcel}
+      />
+
+      <BulkCadastralImport
+        open={bulkImportOpen}
+        onOpenChange={setBulkImportOpen}
+        onImportComplete={handleBulkImport}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
