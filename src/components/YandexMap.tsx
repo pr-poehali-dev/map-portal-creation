@@ -18,6 +18,7 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const polygonObjectsRef = useRef<Map<string, any>>(new Map());
+  const isInitialLoadRef = useRef<boolean>(true);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -120,7 +121,7 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
       polygonObjectsRef.current.set(polygon.id, yandexPolygon);
     });
 
-    if (polygons.length > 0 && mapInstanceRef.current && !selectedPolygonId) {
+    if (polygons.length > 0 && mapInstanceRef.current && isInitialLoadRef.current) {
       const allCoordinates = polygons.flatMap(polygon => 
         polygon.coordinates.map(([x, y]) => {
           const lng = (x / 100) * 360 - 180;
@@ -134,6 +135,7 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
           window.ymaps.util.bounds.fromPoints(allCoordinates),
           { checkZoomRange: true, zoomMargin: 50 }
         );
+        isInitialLoadRef.current = false;
       }
     }
   }, [polygons, selectedPolygonId, opacity, onPolygonClick]);
