@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 export default function Auth() {
   const { login, register } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
   const [loginData, setLoginData] = useState({ email: '', password: '' });
@@ -26,6 +28,7 @@ export default function Auth() {
         title: 'Вход выполнен',
         description: 'Добро пожаловать в GeoPortal!'
       });
+      navigate('/');
     } catch (error) {
       toast({
         title: 'Ошибка входа',
@@ -47,6 +50,7 @@ export default function Auth() {
         title: 'Регистрация успешна',
         description: 'Добро пожаловать в GeoPortal!'
       });
+      navigate('/');
     } catch (error) {
       toast({
         title: 'Ошибка регистрации',
