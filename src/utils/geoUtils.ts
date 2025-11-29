@@ -1,11 +1,20 @@
 import * as turf from '@turf/turf';
 
+export function percentToGeo(percentCoords: number[][]): number[][] {
+  return percentCoords.map(([x, y]) => [
+    (x / 100) * 360 - 180,
+    90 - (y / 100) * 180
+  ]);
+}
+
 export function calculatePolygonArea(coordinates: number[][]): number {
   if (!coordinates || coordinates.length < 3) {
     return 0;
   }
 
-  const closedCoordinates = [...coordinates];
+  const geoCoords = percentToGeo(coordinates);
+  
+  const closedCoordinates = [...geoCoords];
   if (
     closedCoordinates[0][0] !== closedCoordinates[closedCoordinates.length - 1][0] ||
     closedCoordinates[0][1] !== closedCoordinates[closedCoordinates.length - 1][1]
