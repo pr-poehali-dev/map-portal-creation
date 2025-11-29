@@ -208,7 +208,7 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
     if (showCadastralLayer) {
       if (!cadastralLayerRef.current) {
         cadastralLayerRef.current = new window.ymaps.Layer(
-          'https://pkk.rosreestr.ru/arcgis/rest/services/PKK6/CadastreSelected/MapServer/tile/%z/%y/%x',
+          'https://pkk.rosreestr.ru/arcgis/rest/services/Hosted/cadcadastre_02042024/VectorTileServer/tile/%z/%y/%x.pbf',
           {
             tileTransparent: true,
             projection: window.ymaps.projection.sphericalMercator
