@@ -22,10 +22,12 @@ export function calculatePolygonArea(coordinates: number[][]): number {
 
 export function formatArea(areaInHectares: number): string {
   if (areaInHectares < 0.01) {
-    return `${(areaInHectares * 10000).toFixed(0)} м²`;
+    const areaM2 = areaInHectares * 10000;
+    return `${areaM2 < 10 ? areaM2.toFixed(2) : areaM2.toFixed(0)} м²`;
   } else if (areaInHectares < 100) {
-    return `${areaInHectares.toFixed(2)} га`;
+    return `${areaInHectares.toFixed(4).replace(/\.?0+$/, '')} га`;
   } else {
-    return `${(areaInHectares / 100).toFixed(2)} км²`;
+    const areaKm2 = areaInHectares / 100;
+    return `${areaKm2.toFixed(4).replace(/\.?0+$/, '')} км²`;
   }
 }
