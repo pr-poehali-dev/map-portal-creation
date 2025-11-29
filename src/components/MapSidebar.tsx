@@ -116,8 +116,8 @@ export default function MapSidebar({
         </div>
       </div>
 
-      <Tabs defaultValue="objects" className="flex-1 flex flex-col overflow-hidden" onValueChange={(value) => setViewingTrash(value === 'trash')}>
-        <TabsList className="mx-4 my-3 bg-sidebar-accent flex-shrink-0">
+      <Tabs defaultValue="objects" className="flex-1 flex flex-col min-h-0 overflow-hidden" onValueChange={(value) => setViewingTrash(value === 'trash')}>
+        <TabsList className="mx-4 mt-3 mb-0 bg-sidebar-accent flex-shrink-0">
           <TabsTrigger value="objects" className="flex-1">
             <Icon name="Layers" size={16} className="mr-2" />
             Объекты
@@ -151,7 +151,7 @@ export default function MapSidebar({
             </div>
           </div>
           
-          <ScrollArea className="flex-1 min-h-0">
+          <ScrollArea className="flex-1" style={{ height: '100%' }}>
             <div className="p-4 space-y-3">
               {filteredData.map(item => (
                 <Card
