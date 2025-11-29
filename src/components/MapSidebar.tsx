@@ -50,8 +50,8 @@ export default function MapSidebar({
   setImportDialogOpen
 }: MapSidebarProps) {
   return (
-    <aside className="w-80 border-r border-sidebar-border bg-sidebar-background flex flex-col">
-      <div className="p-6 border-b border-sidebar-border">
+    <aside className="w-80 border-r border-sidebar-border bg-sidebar-background flex flex-col h-screen">
+      <div className="p-6 border-b border-sidebar-border flex-shrink-0">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
             <Icon name="Map" size={24} className="text-primary-foreground" />
@@ -95,8 +95,8 @@ export default function MapSidebar({
         </div>
       </div>
 
-      <Tabs defaultValue="objects" className="flex-1 flex flex-col">
-        <TabsList className="mx-6 mt-4 bg-sidebar-accent">
+      <Tabs defaultValue="objects" className="flex-1 flex flex-col min-h-0">
+        <TabsList className="mx-6 mt-4 bg-sidebar-accent flex-shrink-0">
           <TabsTrigger value="objects" className="flex-1">
             <Icon name="Layers" size={16} className="mr-2" />
             Объекты
@@ -107,8 +107,8 @@ export default function MapSidebar({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="objects" className="flex-1 mt-0">
-          <div className="p-4 border-b border-sidebar-border">
+        <TabsContent value="objects" className="flex-1 flex flex-col mt-0 min-h-0">
+          <div className="p-4 border-b border-sidebar-border flex-shrink-0">
             <Label className="text-xs text-sidebar-foreground/60 mb-2 block">Фильтр по типу</Label>
             <div className="flex flex-wrap gap-2">
               {types.map(type => (
@@ -171,7 +171,7 @@ export default function MapSidebar({
           </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="layers" className="flex-1 mt-0">
+        <TabsContent value="layers" className="flex-1 flex flex-col mt-0 min-h-0">
           <ScrollArea className="flex-1">
             <div className="p-4 space-y-4">
               <div className="space-y-1 mb-6">
@@ -218,7 +218,7 @@ export default function MapSidebar({
         </TabsContent>
       </Tabs>
 
-      <div className="p-4 border-t border-sidebar-border">
+      <div className="p-4 border-t border-sidebar-border flex-shrink-0">
         <Button className="w-full" size="lg" onClick={() => setImportDialogOpen(true)}>
           <Icon name="Upload" size={18} className="mr-2" />
           Импорт данных
