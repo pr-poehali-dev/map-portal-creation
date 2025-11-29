@@ -151,7 +151,7 @@ export default function MapSidebar({
             </div>
           </div>
           
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 min-h-0">
             <ScrollArea className="h-full">
             <div className="p-4 space-y-3">
               {filteredData.map(item => (
