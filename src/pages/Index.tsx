@@ -455,6 +455,7 @@ export default function Index() {
                       onCancel={() => setIsEditing(false)}
                     />
                   ) : (
+                    <>
                   <div className="grid grid-cols-2 gap-4">
                     <Card className="p-4">
                       <div className="flex items-center gap-2 mb-2">
@@ -517,6 +518,7 @@ export default function Index() {
                         Экспорт
                       </Button>
                     </div>
+                    </>
                   )}
                 </div>
               </SheetContent>
