@@ -37,6 +37,7 @@ interface MapSidebarProps {
   handlePermanentDelete: (id: string) => void;
   handleEmptyTrash: () => void;
   handleDeleteAll: () => void;
+  loadSampleData: () => void;
 }
 
 export default function MapSidebar({
@@ -64,7 +65,8 @@ export default function MapSidebar({
   handleRestoreFromTrash,
   handlePermanentDelete,
   handleEmptyTrash,
-  handleDeleteAll
+  handleDeleteAll,
+  loadSampleData
 }: MapSidebarProps) {
   useEffect(() => {
     if (viewingTrash && user?.role === 'admin') {
@@ -203,16 +205,31 @@ export default function MapSidebar({
         <TabsContent value="layers" className="flex-1 flex flex-col mt-0 min-h-0 data-[state=inactive]:hidden">
           <ScrollArea className="flex-1">
             <div className="p-4 space-y-4">
-              {user?.role === 'admin' && polygonData.length > 0 && (
-                <Button 
-                  variant="destructive" 
-                  size="sm" 
-                  className="w-full mb-4"
-                  onClick={handleDeleteAll}
-                >
-                  <Icon name="Trash2" size={16} className="mr-2" />
-                  Удалить все объекты ({polygonData.length})
-                </Button>
+              {user?.role === 'admin' && (
+                <div className="space-y-2 mb-4">
+                  {polygonData.length === 0 && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={loadSampleData}
+                    >
+                      <Icon name="Database" size={16} className="mr-2" />
+                      Загрузить демо-данные
+                    </Button>
+                  )}
+                  {polygonData.length > 0 && (
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={handleDeleteAll}
+                    >
+                      <Icon name="Trash2" size={16} className="mr-2" />
+                      Удалить все объекты ({polygonData.length})
+                    </Button>
+                  )}
+                </div>
               )}
 
               <div className="space-y-1 mb-6">

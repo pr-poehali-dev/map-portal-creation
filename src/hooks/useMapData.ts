@@ -87,19 +87,16 @@ export function useMapData(userRole?: string) {
     try {
       setIsLoading(true);
       const data = await polygonApi.getAll();
-      if (data.length === 0) {
-        await Promise.all(sampleData.map(polygon => polygonApi.create(polygon)));
-        const newData = await polygonApi.getAll();
-        setPolygonData(newData);
-      } else {
-        setPolygonData(data);
-      }
+      console.log('📦 Loaded polygons from DB:', data.length);
+      setPolygonData(data);
     } catch (error) {
+      console.error('❌ Failed to load polygons:', error);
       toast({
         title: 'Ошибка загрузки',
         description: 'Не удалось загрузить данные',
         variant: 'destructive'
       });
+      setPolygonData([]);
     } finally {
       setIsLoading(false);
     }
@@ -120,6 +117,23 @@ export function useMapData(userRole?: string) {
     }
   };
 
+  const loadSampleData = async () => {
+    try {
+      await Promise.all(sampleData.map(polygon => polygonApi.create(polygon)));
+      await loadPolygons();
+      toast({
+        title: 'Демо-данные загружены',
+        description: `Добавлено ${sampleData.length} тестовых объектов`
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось загрузить демо-данные',
+        variant: 'destructive'
+      });
+    }
+  };
+
   useEffect(() => {
     loadPolygons();
   }, []);
@@ -131,6 +145,7 @@ export function useMapData(userRole?: string) {
     trashData,
     setTrashData,
     loadPolygons,
-    loadTrash
+    loadTrash,
+    loadSampleData
   };
 }

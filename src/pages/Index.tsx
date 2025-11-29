@@ -20,7 +20,8 @@ export default function Index() {
     trashData,
     setTrashData,
     loadPolygons,
-    loadTrash
+    loadTrash,
+    loadSampleData
   } = useMapData(user?.role);
 
   const [selectedObject, setSelectedObject] = useState<PolygonObject | null>(null);
@@ -112,6 +113,7 @@ export default function Index() {
         handlePermanentDelete={(id) => setConfirmPermanentDelete(id)}
         handleEmptyTrash={() => setConfirmEmptyTrash(true)}
         handleDeleteAll={handleDeleteAll}
+        loadSampleData={loadSampleData}
       />
 
       <main className="flex-1 flex flex-col">
