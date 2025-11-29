@@ -382,15 +382,28 @@ export default function Index() {
               <p className="text-xs text-sidebar-foreground/60">{user?.name}</p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={logout}
-            className="w-full justify-start text-sidebar-foreground/60 hover:text-sidebar-foreground"
-          >
-            <Icon name="LogOut" size={16} className="mr-2" />
-            Выйти
-          </Button>
+          <div className="space-y-1">
+            {user?.role === 'admin' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => window.location.href = '/admin'}
+                className="w-full justify-start text-sidebar-foreground/60 hover:text-sidebar-foreground"
+              >
+                <Icon name="Shield" size={16} className="mr-2" />
+                Администрирование
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={logout}
+              className="w-full justify-start text-sidebar-foreground/60 hover:text-sidebar-foreground"
+            >
+              <Icon name="LogOut" size={16} className="mr-2" />
+              Выйти
+            </Button>
+          </div>
 
           <div className="relative">
             <Icon name="Search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-sidebar-foreground/40" />

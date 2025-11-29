@@ -109,7 +109,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             password_hash = hash_password(password)
             
             cur.execute(
-                "SELECT id, email, name FROM users WHERE email = '" + email.replace("'", "''") + "' "
+                "SELECT id, email, name, role, status FROM users WHERE email = '" + email.replace("'", "''") + "' "
                 "AND password_hash = '" + password_hash + "'"
             )
             user = cur.fetchone()
@@ -121,6 +121,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'error': 'Invalid credentials'})
                 }
             
+            if user.get('status') == 'blocked' or user.get('status') == 'suspended':
+                return {
+                    'statusCode': 403,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Account is ' + user['status']})
+                }
+            
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
@@ -128,7 +135,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'user_id': user['id'],
                     'email': user['email'],
                     'name': user['name'],
-                    'token': user['id']
+                    'token': user['id'],
+                    'role': user.get('role', 'user'),
+                    'status': user.get('status', 'active')
                 })
             }
         
@@ -143,7 +152,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             cur.execute(
-                "SELECT id, email, name FROM users WHERE id = '" + token.replace("'", "''") + "'"
+                "SELECT id, email, name, role, status FROM users WHERE id = '" + token.replace("'", "''") + "'"
             )
             user = cur.fetchone()
             
@@ -160,7 +169,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'body': json.dumps({
                     'user_id': user['id'],
                     'email': user['email'],
-                    'name': user['name']
+                    'name': user['name'],
+                    'role': user.get('role', 'user'),
+                    'status': user.get('status', 'active')
                 })
             }
         
