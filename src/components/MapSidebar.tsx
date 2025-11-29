@@ -134,7 +134,7 @@ export default function MapSidebar({
           )}
         </TabsList>
 
-        <TabsContent value="objects" className="flex-1 flex flex-col mt-0 min-h-0">
+        <TabsContent value="objects" className="flex-1 flex flex-col mt-0 min-h-0 data-[state=inactive]:hidden">
           <div className="px-4 py-3 border-b border-sidebar-border flex-shrink-0">
             <Label className="text-xs text-sidebar-foreground/60 mb-2 block">Фильтр по типу</Label>
             <div className="flex flex-wrap gap-2">
@@ -198,7 +198,7 @@ export default function MapSidebar({
           </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="layers" className="flex-1 flex flex-col mt-0 min-h-0">
+        <TabsContent value="layers" className="flex-1 flex flex-col mt-0 min-h-0 data-[state=inactive]:hidden">
           <ScrollArea className="flex-1">
             <div className="p-4 space-y-4">
               <div className="space-y-1 mb-6">
@@ -245,7 +245,7 @@ export default function MapSidebar({
         </TabsContent>
 
         {user?.role === 'admin' && (
-          <TabsContent value="trash" className="flex-1 flex flex-col mt-0 min-h-0">
+          <TabsContent value="trash" className="flex-1 flex flex-col mt-0 min-h-0 data-[state=inactive]:hidden">
             <ScrollArea className="flex-1">
               <div className="p-4 space-y-3">
                 {trashData.length > 0 && (
