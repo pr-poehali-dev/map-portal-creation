@@ -65,19 +65,25 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
     const polygons: any[] = [];
     const features = geojson.type === 'FeatureCollection' ? geojson.features : [geojson];
 
+    console.log('🔍 Total features to import:', features.length);
+
     features.forEach((feature: any, index: number) => {
       if (!feature.geometry) return;
 
       const geometryType = feature.geometry.type;
       const properties = feature.properties || {};
 
+      console.log(`📍 Feature ${index}: type=${geometryType}, name=${properties.name || 'unnamed'}`);
+
       if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
         let outerRings: any[] = [];
 
         if (geometryType === 'Polygon') {
           outerRings = [feature.geometry.coordinates[0]];
+          console.log(`  └─ Polygon with 1 ring, ${feature.geometry.coordinates[0].length} points`);
         } else if (geometryType === 'MultiPolygon') {
           outerRings = feature.geometry.coordinates.map((poly: any) => poly[0]);
+          console.log(`  └─ MultiPolygon with ${feature.geometry.coordinates.length} parts`);
         }
 
         const normalizedRings = outerRings.map(ring => 
@@ -94,7 +100,7 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
         const area = properties.area ? parseFloat(properties.area) : Math.random() * 100 + 10;
         const validArea = isNaN(area) || area < 0.01 ? 10.0 : parseFloat(area.toFixed(2));
 
-        polygons.push({
+        const polygonObject = {
           id: `imported-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
           name: properties.name || properties.title || `Объект ${index + 1}`,
           type: properties.type || properties.category || 'Импортированный объект',
@@ -110,10 +116,14 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
             isMultiPolygon: geometryType === 'MultiPolygon',
             partsCount: normalizedRings.length
           }
-        });
+        };
+
+        console.log(`  ✅ Created 1 object with ${normalizedRings.length} ring(s)`);
+        polygons.push(polygonObject);
       }
     });
 
+    console.log(`✨ Total objects created: ${polygons.length}`);
     return polygons;
   };
 
