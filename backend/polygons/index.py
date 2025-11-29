@@ -378,6 +378,32 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             action = event.get('queryStringParameters', {}).get('action', 'move_to_trash')
             polygon_id = event.get('queryStringParameters', {}).get('id')
             
+            if action == 'empty_trash':
+                cur.execute("SELECT role FROM users WHERE id = '" + user_id.replace("'", "''") + "'")
+                user = cur.fetchone()
+                
+                if not user or user['role'] != 'admin':
+                    return {
+                        'statusCode': 403,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Only admin can empty trash'})
+                    }
+                
+                cur.execute("SELECT COUNT(*) as count FROM trash_polygons")
+                count_result = cur.fetchone()
+                count = count_result['count'] if count_result else 0
+                
+                cur.execute("DELETE FROM trash_polygons")
+                conn.commit()
+                
+                log_action(cur, conn, user_id, 'empty_trash', 'polygon', None, f'Emptied trash: {count} items')
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'message': f'Trash emptied: {count} items deleted'})
+                }
+            
             if not polygon_id:
                 return {
                     'statusCode': 400,
@@ -475,32 +501,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'statusCode': 200,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'body': json.dumps({'message': 'Polygon permanently deleted', 'id': polygon_id})
-                }
-            
-            elif action == 'empty_trash':
-                cur.execute("SELECT role FROM users WHERE id = '" + user_id.replace("'", "''") + "'")
-                user = cur.fetchone()
-                
-                if not user or user['role'] != 'admin':
-                    return {
-                        'statusCode': 403,
-                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                        'body': json.dumps({'error': 'Only admin can empty trash'})
-                    }
-                
-                cur.execute("SELECT COUNT(*) as count FROM trash_polygons")
-                count_result = cur.fetchone()
-                count = count_result['count'] if count_result else 0
-                
-                cur.execute("DELETE FROM trash_polygons")
-                conn.commit()
-                
-                log_action(cur, conn, user_id, 'empty_trash', 'polygon', None, f'Emptied trash: {count} items')
-                
-                return {
-                    'statusCode': 200,
-                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'message': f'Trash emptied: {count} items deleted'})
                 }
         
         return {
