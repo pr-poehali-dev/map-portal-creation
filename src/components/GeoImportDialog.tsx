@@ -96,7 +96,7 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
           console.log(`  ℹ️ Original area from file: ${properties.area} (ignored, using calculated)`);
         }
         
-        const validArea = areaInKm2 < 0.000001 ? 0.000001 : parseFloat(areaInKm2.toFixed(6));
+        const validArea = areaInKm2 < 0.000001 ? 0.000001 : areaInKm2;
 
         const normalizedRings = outerRings.map(ring => 
           ring.map(([lng, lat]: [number, number]) => {
