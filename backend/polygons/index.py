@@ -28,7 +28,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, X-User-Id',
+                'Access-Control-Allow-Headers': 'Content-Type, X-User-Id, X-Auth-Token',
                 'Access-Control-Max-Age': '86400'
             },
             'body': ''
@@ -42,6 +42,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'error': 'DATABASE_URL not configured'})
         }
     
+    user_id = event.get('headers', {}).get('X-User-Id')
+    if not user_id:
+        return {
+            'statusCode': 401,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Authentication required'})
+        }
+    
     try:
         conn = psycopg2.connect(database_url)
         cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -51,7 +59,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             if polygon_id:
                 cur.execute(
-                    "SELECT * FROM polygon_objects WHERE id = '" + polygon_id.replace("'", "''") + "'"
+                    "SELECT * FROM polygon_objects WHERE id = '" + polygon_id.replace("'", "''") + "' AND user_id = '" + user_id.replace("'", "''") + "'"
                 )
                 result = cur.fetchone()
                 
@@ -68,7 +76,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps(dict(result), default=json_serializer)
                 }
             else:
-                cur.execute("SELECT * FROM polygon_objects ORDER BY created_at DESC")
+                cur.execute("SELECT * FROM polygon_objects WHERE user_id = '" + user_id.replace("'", "''") + "' ORDER BY created_at DESC")
                 results = cur.fetchall()
                 
                 return {
@@ -81,7 +89,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             body = json.loads(event.get('body', '{}'))
             
             cur.execute(
-                "INSERT INTO polygon_objects (id, name, type, area, population, status, coordinates, color, layer, visible, attributes) "
+                "INSERT INTO polygon_objects (id, name, type, area, population, status, coordinates, color, layer, visible, attributes, user_id) "
                 "VALUES ('" + body['id'].replace("'", "''") + "', "
                 "'" + body['name'].replace("'", "''") + "', "
                 "'" + body['type'].replace("'", "''") + "', "
@@ -92,7 +100,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "'" + body['color'].replace("'", "''") + "', "
                 "'" + body['layer'].replace("'", "''") + "', "
                 "" + str(body.get('visible', True)).lower() + ", "
-                "'" + json.dumps(body.get('attributes', {})).replace("'", "''") + "') "
+                "'" + json.dumps(body.get('attributes', {})).replace("'", "''") + "', "
+                "'" + user_id.replace("'", "''") + "') "
                 "RETURNING *"
             )
             result = cur.fetchone()
@@ -128,7 +137,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "visible = " + str(body.get('visible', True)).lower() + ", "
                 "attributes = '" + json.dumps(body.get('attributes', {})).replace("'", "''") + "', "
                 "updated_at = CURRENT_TIMESTAMP "
-                "WHERE id = '" + polygon_id.replace("'", "''") + "' "
+                "WHERE id = '" + polygon_id.replace("'", "''") + "' AND user_id = '" + user_id.replace("'", "''") + "' "
                 "RETURNING *"
             )
             result = cur.fetchone()
@@ -159,7 +168,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             cur.execute(
-                "DELETE FROM polygon_objects WHERE id = '" + polygon_id.replace("'", "''") + "' RETURNING id"
+                "DELETE FROM polygon_objects WHERE id = '" + polygon_id.replace("'", "''") + "' AND user_id = '" + user_id.replace("'", "''") + "' RETURNING id"
             )
             result = cur.fetchone()
             

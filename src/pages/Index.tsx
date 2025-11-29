@@ -21,6 +21,7 @@ import { PolygonObject } from '@/types/polygon';
 import { exportToGeoJSON } from '@/utils/geoExport';
 import { useToast } from '@/hooks/use-toast';
 import { polygonApi } from '@/services/polygonApi';
+import { useAuth } from '@/contexts/AuthContext';
 
 const sampleData: PolygonObject[] = [
   {
@@ -97,6 +98,7 @@ const layers = [
 ];
 
 export default function Index() {
+  const { user, logout } = useAuth();
   const [polygonData, setPolygonData] = useState<PolygonObject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedObject, setSelectedObject] = useState<PolygonObject | null>(null);
@@ -377,9 +379,18 @@ export default function Index() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-sidebar-foreground">GeoPortal</h1>
-              <p className="text-xs text-sidebar-foreground/60">Картографическая система</p>
+              <p className="text-xs text-sidebar-foreground/60">{user?.name}</p>
             </div>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={logout}
+            className="w-full justify-start text-sidebar-foreground/60 hover:text-sidebar-foreground"
+          >
+            <Icon name="LogOut" size={16} className="mr-2" />
+            Выйти
+          </Button>
 
           <div className="relative">
             <Icon name="Search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-sidebar-foreground/40" />

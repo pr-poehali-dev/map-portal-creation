@@ -2,13 +2,19 @@ import { PolygonObject } from '@/types/polygon';
 
 const API_URL = 'https://functions.poehali.dev/ba968529-dbc0-460b-9581-0535bbb18bb3';
 
+function getAuthHeaders() {
+  const token = localStorage.getItem('auth_token');
+  return {
+    'Content-Type': 'application/json',
+    'X-User-Id': token || ''
+  };
+}
+
 export const polygonApi = {
   async getAll(): Promise<PolygonObject[]> {
     const response = await fetch(API_URL, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders()
     });
 
     if (!response.ok) {
@@ -21,9 +27,7 @@ export const polygonApi = {
   async getById(id: string): Promise<PolygonObject> {
     const response = await fetch(`${API_URL}?id=${id}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders()
     });
 
     if (!response.ok) {
@@ -36,9 +40,7 @@ export const polygonApi = {
   async create(polygon: PolygonObject): Promise<PolygonObject> {
     const response = await fetch(API_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(polygon)
     });
 
@@ -52,9 +54,7 @@ export const polygonApi = {
   async update(id: string, polygon: PolygonObject): Promise<PolygonObject> {
     const response = await fetch(`${API_URL}?id=${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(polygon)
     });
 
@@ -68,9 +68,7 @@ export const polygonApi = {
   async delete(id: string): Promise<void> {
     const response = await fetch(`${API_URL}?id=${id}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders()
     });
 
     if (!response.ok) {
