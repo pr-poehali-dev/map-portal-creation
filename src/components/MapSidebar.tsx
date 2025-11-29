@@ -71,9 +71,9 @@ export default function MapSidebar({
   }, [viewingTrash]);
 
   return (
-    <aside className="w-80 border-r border-sidebar-border bg-sidebar-background flex flex-col h-screen">
-      <div className="p-6 border-b border-sidebar-border flex-shrink-0">
-        <div className="flex items-center gap-3 mb-6">
+    <aside className="w-96 border-r border-sidebar-border bg-sidebar-background flex flex-col h-screen">
+      <div className="p-4 border-b border-sidebar-border flex-shrink-0">
+        <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
             <Icon name="Map" size={24} className="text-primary-foreground" />
           </div>
@@ -82,7 +82,7 @@ export default function MapSidebar({
             <p className="text-xs text-sidebar-foreground/60">{user?.name}</p>
           </div>
         </div>
-        <div className="space-y-1">
+        <div className="space-y-1 mb-3">
           {user?.role === 'admin' && (
             <Button
               variant="ghost"
@@ -117,7 +117,7 @@ export default function MapSidebar({
       </div>
 
       <Tabs defaultValue="objects" className="flex-1 flex flex-col min-h-0" onValueChange={(value) => setViewingTrash(value === 'trash')}>
-        <TabsList className="mx-6 mt-4 bg-sidebar-accent flex-shrink-0">
+        <TabsList className="mx-4 mt-3 bg-sidebar-accent flex-shrink-0">
           <TabsTrigger value="objects" className="flex-1">
             <Icon name="Layers" size={16} className="mr-2" />
             Объекты
@@ -135,24 +135,23 @@ export default function MapSidebar({
         </TabsList>
 
         <TabsContent value="objects" className="flex-1 flex flex-col mt-0 min-h-0">
-          <div className="p-4 border-b border-sidebar-border flex-shrink-0">
-            <Label className="text-xs text-sidebar-foreground/60 mb-2 block">Фильтр по типу</Label>
-            <div className="flex flex-wrap gap-2">
-              {types.map(type => (
-                <Badge
-                  key={type}
-                  variant={filterType === type ? "default" : "outline"}
-                  className="cursor-pointer hover:scale-105 transition-transform"
-                  onClick={() => setFilterType(type)}
-                >
-                  {type}
-                </Badge>
-              ))}
-            </div>
-          </div>
-
           <ScrollArea className="flex-1">
-            <div className="p-4 space-y-3">
+            <div className="px-4 pt-3 pb-2">
+              <Label className="text-xs text-sidebar-foreground/60 mb-2 block">Фильтр по типу</Label>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {types.map(type => (
+                  <Badge
+                    key={type}
+                    variant={filterType === type ? "default" : "outline"}
+                    className="cursor-pointer hover:scale-105 transition-transform"
+                    onClick={() => setFilterType(type)}
+                  >
+                    {type}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            <div className="px-4 pb-4 space-y-3">
               {filteredData.map(item => (
                 <Card
                   key={item.id}
