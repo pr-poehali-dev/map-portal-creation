@@ -136,22 +136,7 @@ export default function MapSidebar({
 
         <TabsContent value="objects" className="flex-1 flex flex-col mt-0 min-h-0">
           <ScrollArea className="flex-1">
-            <div className="px-4 pt-3 pb-2">
-              <Label className="text-xs text-sidebar-foreground/60 mb-2 block">Фильтр по типу</Label>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {types.map(type => (
-                  <Badge
-                    key={type}
-                    variant={filterType === type ? "default" : "outline"}
-                    className="cursor-pointer hover:scale-105 transition-transform"
-                    onClick={() => setFilterType(type)}
-                  >
-                    {type}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-            <div className="px-4 pb-4 space-y-3">
+            <div className="p-4 space-y-3">
               {filteredData.map(item => (
                 <Card
                   key={item.id}
