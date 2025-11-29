@@ -12,6 +12,7 @@ import Icon from '@/components/ui/icon';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import GeoImportDialog from '@/components/GeoImportDialog';
+import AttributeEditor from '@/components/AttributeEditor';
 import { PolygonObject } from '@/types/polygon';
 import { exportToGeoJSON } from '@/utils/geoExport';
 import { useToast } from '@/hooks/use-toast';
@@ -100,6 +101,7 @@ export default function Index() {
   );
   const [mapOpacity, setMapOpacity] = useState([80]);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
 
   const filteredData = polygonData.filter(item => {
@@ -149,6 +151,16 @@ export default function Index() {
     toast({
       title: 'Экспорт завершён',
       description: `Экспортирован: ${selectedObject.name}`,
+    });
+  };
+
+  const handleSaveObject = (updatedObject: PolygonObject) => {
+    setPolygonData(prev => prev.map(obj => obj.id === updatedObject.id ? updatedObject : obj));
+    setSelectedObject(updatedObject);
+    setIsEditing(false);
+    toast({
+      title: 'Изменения сохранены',
+      description: `Объект "${updatedObject.name}" успешно обновлён`,
     });
   };
 
@@ -405,20 +417,44 @@ export default function Index() {
           </svg>
 
           {selectedObject && (
-            <Sheet open={!!selectedObject} onOpenChange={() => setSelectedObject(null)}>
+            <Sheet open={!!selectedObject} onOpenChange={() => {
+              setSelectedObject(null);
+              setIsEditing(false);
+            }}>
               <SheetContent side="right" className="w-[400px] sm:w-[540px]">
                 <SheetHeader>
-                  <div className="flex items-center gap-3 mb-2">
-                    <div
-                      className="w-6 h-6 rounded-lg"
-                      style={{ backgroundColor: selectedObject.color }}
-                    />
-                    <SheetTitle className="text-2xl">{selectedObject.name}</SheetTitle>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-6 h-6 rounded-lg"
+                        style={{ backgroundColor: selectedObject.color }}
+                      />
+                      <div>
+                        <SheetTitle className="text-2xl">{selectedObject.name}</SheetTitle>
+                        <SheetDescription>{selectedObject.type}</SheetDescription>
+                      </div>
+                    </div>
+                    {!isEditing && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsEditing(true)}
+                      >
+                        <Icon name="Edit" size={16} className="mr-2" />
+                        Редактировать
+                      </Button>
+                    )}
                   </div>
-                  <SheetDescription>{selectedObject.type}</SheetDescription>
                 </SheetHeader>
 
                 <div className="mt-6 space-y-6">
+                  {isEditing ? (
+                    <AttributeEditor
+                      object={selectedObject}
+                      onSave={handleSaveObject}
+                      onCancel={() => setIsEditing(false)}
+                    />
+                  ) : (
                   <div className="grid grid-cols-2 gap-4">
                     <Card className="p-4">
                       <div className="flex items-center gap-2 mb-2">
@@ -471,16 +507,17 @@ export default function Index() {
                     </Card>
                   </div>
 
-                  <div className="flex gap-2">
-                    <Button className="flex-1" variant="outline">
-                      <Icon name="Edit" size={16} className="mr-2" />
-                      Редактировать
-                    </Button>
-                    <Button className="flex-1" onClick={handleExportSelected}>
-                      <Icon name="Download" size={16} className="mr-2" />
-                      Экспорт
-                    </Button>
-                  </div>
+                    <div className="flex gap-2">
+                      <Button className="flex-1" variant="outline" onClick={() => setIsEditing(true)}>
+                        <Icon name="Edit" size={16} className="mr-2" />
+                        Редактировать
+                      </Button>
+                      <Button className="flex-1" onClick={handleExportSelected}>
+                        <Icon name="Download" size={16} className="mr-2" />
+                        Экспорт
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
