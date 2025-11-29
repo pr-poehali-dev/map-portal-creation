@@ -13,6 +13,63 @@ def json_serializer(obj):
         return obj.isoformat()
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
+def check_permission(cur, user_id: str, resource_type: str, resource_id: str = None, required_level: str = 'read') -> bool:
+    cur.execute("SELECT role FROM users WHERE id = '" + user_id.replace("'", "''") + "'")
+    user = cur.fetchone()
+    
+    if not user:
+        return False
+    
+    if user['role'] == 'admin':
+        return True
+    
+    if resource_id:
+        cur.execute(
+            "SELECT permission_level FROM permissions WHERE user_id = '" + user_id.replace("'", "''") + "' "
+            "AND resource_type = '" + resource_type.replace("'", "''") + "' "
+            "AND (resource_id = '" + resource_id.replace("'", "''") + "' OR resource_id IS NULL) "
+            "AND permission_level != 'revoked' ORDER BY resource_id DESC LIMIT 1"
+        )
+    else:
+        cur.execute(
+            "SELECT permission_level FROM permissions WHERE user_id = '" + user_id.replace("'", "''") + "' "
+            "AND resource_type = '" + resource_type.replace("'", "''") + "' "
+            "AND resource_id IS NULL AND permission_level != 'revoked' LIMIT 1"
+        )
+    
+    perm = cur.fetchone()
+    
+    if not perm:
+        if required_level == 'read':
+            return user['role'] in ['editor', 'user']
+        elif required_level == 'write':
+            return user['role'] in ['editor', 'user']
+        elif required_level == 'delete':
+            return user['role'] in ['editor', 'admin']
+        return True
+    
+    level = perm['permission_level']
+    
+    if required_level == 'read':
+        return level in ['read', 'write', 'admin']
+    elif required_level == 'write':
+        return level in ['write', 'admin']
+    elif required_level == 'delete':
+        return level == 'admin'
+    
+    return False
+
+def log_action(cur, conn, user_id: str, action: str, resource_type: str, resource_id: str = None, details: str = None):
+    details_sql = "'" + details.replace("'", "''") + "'" if details else 'NULL'
+    resource_id_sql = "'" + resource_id.replace("'", "''") + "'" if resource_id else 'NULL'
+    
+    cur.execute(
+        "INSERT INTO audit_log (user_id, action, resource_type, resource_id, details) "
+        "VALUES ('" + user_id.replace("'", "''") + "', '" + action.replace("'", "''") + "', "
+        "'" + resource_type.replace("'", "''") + "', " + resource_id_sql + ", " + details_sql + ")"
+    )
+    conn.commit()
+
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
     Business: CRUD операции с полигональными объектами карты
@@ -59,7 +116,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             if polygon_id:
                 cur.execute(
-                    "SELECT * FROM polygon_objects WHERE id = '" + polygon_id.replace("'", "''") + "' AND user_id = '" + user_id.replace("'", "''") + "'"
+                    "SELECT * FROM polygon_objects WHERE id = '" + polygon_id.replace("'", "''") + "'"
                 )
                 result = cur.fetchone()
                 
@@ -70,23 +127,46 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'body': json.dumps({'error': 'Polygon not found'})
                     }
                 
+                if result['user_id'] != user_id:
+                    if not check_permission(cur, user_id, 'layer', result['layer'], 'read'):
+                        return {
+                            'statusCode': 403,
+                            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                            'body': json.dumps({'error': 'Access denied'})
+                        }
+                
                 return {
                     'statusCode': 200,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'body': json.dumps(dict(result), default=json_serializer)
                 }
             else:
-                cur.execute("SELECT * FROM polygon_objects WHERE user_id = '" + user_id.replace("'", "''") + "' ORDER BY created_at DESC")
-                results = cur.fetchall()
+                cur.execute("SELECT * FROM polygon_objects ORDER BY created_at DESC")
+                all_results = cur.fetchall()
+                
+                filtered_results = []
+                for row in all_results:
+                    if row['user_id'] == user_id:
+                        filtered_results.append(dict(row))
+                    elif check_permission(cur, user_id, 'layer', row['layer'], 'read'):
+                        filtered_results.append(dict(row))
                 
                 return {
                     'statusCode': 200,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps([dict(row) for row in results], default=json_serializer)
+                    'body': json.dumps(filtered_results, default=json_serializer)
                 }
         
         elif method == 'POST':
             body = json.loads(event.get('body', '{}'))
+            layer = body['layer']
+            
+            if not check_permission(cur, user_id, 'layer', layer, 'write'):
+                return {
+                    'statusCode': 403,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'No permission to create objects in this layer'})
+                }
             
             cur.execute(
                 "INSERT INTO polygon_objects (id, name, type, area, population, status, coordinates, color, layer, visible, attributes, user_id) "
@@ -107,6 +187,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             result = cur.fetchone()
             conn.commit()
             
+            log_action(cur, conn, user_id, 'create_object', 'polygon', result['id'], 'Created ' + body['name'])
+            
             return {
                 'statusCode': 201,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
@@ -121,6 +203,26 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'body': json.dumps({'error': 'Polygon ID required'})
                 }
+            
+            cur.execute(
+                "SELECT user_id, layer FROM polygon_objects WHERE id = '" + polygon_id.replace("'", "''") + "'"
+            )
+            existing = cur.fetchone()
+            
+            if not existing:
+                return {
+                    'statusCode': 404,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Polygon not found'})
+                }
+            
+            if existing['user_id'] != user_id:
+                if not check_permission(cur, user_id, 'layer', existing['layer'], 'write'):
+                    return {
+                        'statusCode': 403,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'No permission to edit this object'})
+                    }
             
             body = json.loads(event.get('body', '{}'))
             
@@ -137,20 +239,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "visible = " + str(body.get('visible', True)).lower() + ", "
                 "attributes = '" + json.dumps(body.get('attributes', {})).replace("'", "''") + "', "
                 "updated_at = CURRENT_TIMESTAMP "
-                "WHERE id = '" + polygon_id.replace("'", "''") + "' AND user_id = '" + user_id.replace("'", "''") + "' "
+                "WHERE id = '" + polygon_id.replace("'", "''") + "' "
                 "RETURNING *"
             )
             result = cur.fetchone()
-            
-            if not result:
-                conn.rollback()
-                return {
-                    'statusCode': 404,
-                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'error': 'Polygon not found'})
-                }
-            
             conn.commit()
+            
+            log_action(cur, conn, user_id, 'update_object', 'polygon', polygon_id, 'Updated ' + body['name'])
             
             return {
                 'statusCode': 200,
@@ -168,19 +263,32 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             cur.execute(
-                "DELETE FROM polygon_objects WHERE id = '" + polygon_id.replace("'", "''") + "' AND user_id = '" + user_id.replace("'", "''") + "' RETURNING id"
+                "SELECT user_id, layer, name FROM polygon_objects WHERE id = '" + polygon_id.replace("'", "''") + "'"
             )
-            result = cur.fetchone()
+            existing = cur.fetchone()
             
-            if not result:
-                conn.rollback()
+            if not existing:
                 return {
                     'statusCode': 404,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'body': json.dumps({'error': 'Polygon not found'})
                 }
             
+            if existing['user_id'] != user_id:
+                if not check_permission(cur, user_id, 'layer', existing['layer'], 'delete'):
+                    return {
+                        'statusCode': 403,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'No permission to delete this object'})
+                    }
+            
+            cur.execute(
+                "DELETE FROM polygon_objects WHERE id = '" + polygon_id.replace("'", "''") + "' RETURNING id"
+            )
+            result = cur.fetchone()
             conn.commit()
+            
+            log_action(cur, conn, user_id, 'delete_object', 'polygon', polygon_id, 'Deleted ' + existing['name'])
             
             return {
                 'statusCode': 200,

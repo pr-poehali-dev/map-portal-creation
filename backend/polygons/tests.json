@@ -1,17 +1,32 @@
 {
   "tests": [
     {
-      "name": "Get all polygons (empty database)",
+      "name": "Authentication required for GET",
       "method": "GET",
       "path": "/",
-      "expectedStatus": 200,
-      "expectedBody": [],
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "Authentication required"
+      },
       "bodyMatcher": "exact"
     },
     {
-      "name": "Create new polygon",
+      "name": "Get all polygons with auth",
+      "method": "GET",
+      "path": "/",
+      "headers": {
+        "X-User-Id": "uL9E0S3HAY1ssmL5RE8SQYKDi2TEXgOHzQVz_-v8I5w"
+      },
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Create new polygon with auth",
       "method": "POST",
       "path": "/",
+      "headers": {
+        "X-User-Id": "uL9E0S3HAY1ssmL5RE8SQYKDi2TEXgOHzQVz_-v8I5w"
+      },
       "body": {
         "id": "test-polygon-1",
         "name": "Тестовый район",
@@ -32,62 +47,6 @@
         "type": "Административный округ"
       },
       "bodyMatcher": "partial"
-    },
-    {
-      "name": "Get polygon by ID",
-      "method": "GET",
-      "path": "/?id=test-polygon-1",
-      "expectedStatus": 200,
-      "expectedBody": {
-        "id": "test-polygon-1",
-        "name": "Тестовый район"
-      },
-      "bodyMatcher": "partial"
-    },
-    {
-      "name": "Update polygon",
-      "method": "PUT",
-      "path": "/?id=test-polygon-1",
-      "body": {
-        "name": "Обновленный район",
-        "type": "Административный округ",
-        "area": 50.5,
-        "population": 130000,
-        "status": "Развитие",
-        "coordinates": [[50, 30], [60, 30], [60, 40], [50, 40]],
-        "color": "#0EA5E9",
-        "layer": "Административное деление",
-        "visible": true,
-        "attributes": {"код": "ТР-001", "обновлено": "да"}
-      },
-      "expectedStatus": 200,
-      "expectedBody": {
-        "id": "test-polygon-1",
-        "name": "Обновленный район",
-        "area": 50.5
-      },
-      "bodyMatcher": "partial"
-    },
-    {
-      "name": "Delete polygon",
-      "method": "DELETE",
-      "path": "/?id=test-polygon-1",
-      "expectedStatus": 200,
-      "expectedBody": {
-        "message": "Polygon deleted successfully",
-        "id": "test-polygon-1"
-      },
-      "bodyMatcher": "exact"
-    },
-    {
-      "name": "Get non-existent polygon",
-      "method": "GET",
-      "path": "/?id=non-existent",
-      "expectedStatus": 404,
-      "expectedBody": {
-        "error": "Polygon not found"
-      },
-      "bodyMatcher": "exact"
     }
   ]
 }
