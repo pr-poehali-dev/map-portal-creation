@@ -168,7 +168,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'error': 'No permission to create objects in this layer'})
                 }
             
-            cur.execute(
+            print(f"DEBUG: Creating polygon with data: id={body['id']}, name={body['name']}, area={body['area']}, type={body['type']}")
+            
+            sql_query = (
                 "INSERT INTO polygon_objects (id, name, type, area, population, status, coordinates, color, layer, visible, attributes, user_id) "
                 "VALUES ('" + body['id'].replace("'", "''") + "', "
                 "'" + body['name'].replace("'", "''") + "', "
@@ -184,6 +186,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "'" + user_id.replace("'", "''") + "') "
                 "RETURNING *"
             )
+            
+            print(f"DEBUG SQL: {sql_query[:500]}")
+            
+            cur.execute(sql_query)
             result = cur.fetchone()
             conn.commit()
             
