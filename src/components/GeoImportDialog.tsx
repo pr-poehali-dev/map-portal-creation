@@ -97,8 +97,31 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
         const colors = ['#0EA5E9', '#8B5CF6', '#10B981', '#F97316', '#EAB308', '#EC4899'];
         const color = colors[index % colors.length];
 
-        const area = properties.area ? parseFloat(properties.area) : Math.random() * 100 + 10;
-        const validArea = isNaN(area) || area < 0.01 ? 10.0 : parseFloat(area.toFixed(2));
+        let areaInKm2 = 0.1;
+        
+        if (properties.area) {
+          const rawArea = parseFloat(properties.area);
+          console.log(`  📏 Raw area from file: ${rawArea}`);
+          
+          // Определяем единицы измерения
+          if (rawArea < 1) {
+            // Скорее всего км²
+            areaInKm2 = rawArea;
+            console.log(`  → Detected as km²: ${areaInKm2}`);
+          } else if (rawArea < 10000) {
+            // Скорее всего га (1 га = 0.01 км²)
+            areaInKm2 = rawArea * 0.01;
+            console.log(`  → Detected as hectares, converted to km²: ${areaInKm2}`);
+          } else {
+            // Скорее всего м² (1 км² = 1,000,000 м²)
+            areaInKm2 = rawArea / 1000000;
+            console.log(`  → Detected as m², converted to km²: ${areaInKm2}`);
+          }
+        } else {
+          console.log(`  ⚠️ No area in properties, using default: ${areaInKm2} km²`);
+        }
+        
+        const validArea = isNaN(areaInKm2) || areaInKm2 < 0.000001 ? 0.01 : parseFloat(areaInKm2.toFixed(6));
 
         const polygonObject = {
           id: `imported-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
@@ -114,11 +137,12 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
           attributes: {
             ...properties,
             isMultiPolygon: geometryType === 'MultiPolygon',
-            partsCount: normalizedRings.length
+            partsCount: normalizedRings.length,
+            originalArea: properties.area
           }
         };
 
-        console.log(`  ✅ Created 1 object with ${normalizedRings.length} ring(s)`);
+        console.log(`  ✅ Created object with area: ${validArea} km² (${(validArea * 100).toFixed(2)} ha)`);
         polygons.push(polygonObject);
       }
     });
