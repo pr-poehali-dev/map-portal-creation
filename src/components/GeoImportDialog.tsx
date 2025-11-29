@@ -72,16 +72,16 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
       const properties = feature.properties || {};
 
       if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
-        let allCoordinates: number[][][] = [];
+        let rawCoordinates: any[] = [];
 
         if (geometryType === 'Polygon') {
-          allCoordinates = [feature.geometry.coordinates[0]];
+          rawCoordinates = feature.geometry.coordinates;
         } else if (geometryType === 'MultiPolygon') {
-          allCoordinates = feature.geometry.coordinates.map((poly: any) => poly[0]);
+          rawCoordinates = feature.geometry.coordinates.flatMap((poly: any) => poly);
         }
 
-        const normalizedMultiCoords = allCoordinates.map(coords => 
-          coords.map(([lng, lat]: [number, number]) => {
+        const normalizedCoords = rawCoordinates.map(ring => 
+          ring.map(([lng, lat]: [number, number]) => {
             const x = ((lng + 180) / 360) * 100;
             const y = ((90 - lat) / 180) * 100;
             return [x, y] as [number, number];
@@ -101,14 +101,14 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
           area: validArea,
           population: properties.population || properties.pop || undefined,
           status: properties.status || 'Импортирован',
-          coordinates: normalizedMultiCoords.length === 1 ? normalizedMultiCoords[0] : normalizedMultiCoords,
+          coordinates: normalizedCoords.length === 1 ? normalizedCoords[0] : normalizedCoords,
           color: color,
           layer: 'Импортированные данные',
           visible: true,
           attributes: {
             ...properties,
             isMultiPolygon: geometryType === 'MultiPolygon',
-            partsCount: normalizedMultiCoords.length
+            partsCount: normalizedCoords.length
           }
         });
       }
