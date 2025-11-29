@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { PolygonObject } from '@/types/polygon';
-import { calculatePolygonArea, formatArea } from '@/utils/geoUtils';
+import { formatArea } from '@/utils/geoUtils';
 
 interface YandexMapProps {
   polygons: PolygonObject[];
@@ -98,7 +98,7 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
             <div style="padding: 8px;">
               <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600;">${polygon.name}</h3>
               <p style="margin: 4px 0; color: #666; font-size: 13px;">${polygon.type}</p>
-              <p style="margin: 4px 0; font-size: 13px;"><strong>Площадь:</strong> ${formatArea(calculatePolygonArea(polygon.coordinates))}</p>
+              <p style="margin: 4px 0; font-size: 13px;"><strong>Площадь:</strong> ${formatArea(polygon.area * 100)}</p>
               ${polygon.population ? `<p style="margin: 4px 0; font-size: 13px;"><strong>Население:</strong> ${polygon.population.toLocaleString()}</p>` : ''}
               <p style="margin: 4px 0; font-size: 13px;"><strong>Статус:</strong> ${polygon.status}</p>
             </div>

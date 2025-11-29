@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import Icon from '@/components/ui/icon';
 import { PolygonObject } from '@/types/polygon';
-import { calculatePolygonArea, formatArea } from '@/utils/geoUtils';
+import { formatArea } from '@/utils/geoUtils';
 
 interface MapSidebarProps {
   user: any;
@@ -177,7 +177,7 @@ export default function MapSidebar({
                       <div className="flex items-center gap-3 text-xs">
                         <span className="flex items-center gap-1 text-muted-foreground">
                           <Icon name="Maximize2" size={12} />
-                          {formatArea(calculatePolygonArea(item.coordinates))}
+                          {formatArea(item.area * 100)}
                         </span>
                         {item.population && (
                           <span className="flex items-center gap-1 text-muted-foreground">
