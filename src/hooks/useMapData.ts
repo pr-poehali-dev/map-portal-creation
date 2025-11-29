@@ -88,7 +88,17 @@ export function useMapData(userRole?: string) {
       setIsLoading(true);
       const data = await polygonApi.getAll();
       console.log('📦 Loaded polygons from DB:', data.length);
+      if (data.length > 0) {
+        console.log('🔍 First polygon details:', {
+          id: data[0].id,
+          name: data[0].name,
+          layer: data[0].layer,
+          visible: data[0].visible,
+          coordinates_length: Array.isArray(data[0].coordinates) ? data[0].coordinates.length : 'not array'
+        });
+      }
       setPolygonData(data);
+      console.log('✅ State updated with', data.length, 'polygons');
     } catch (error) {
       console.error('❌ Failed to load polygons:', error);
       toast({

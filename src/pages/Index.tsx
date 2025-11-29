@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import MapSidebar from '@/components/MapSidebar';
@@ -30,6 +30,24 @@ export default function Index() {
   const [layerVisibility, setLayerVisibility] = useState<Record<string, boolean>>(
     layers.reduce((acc, layer) => ({ ...acc, [layer.name]: true }), {})
   );
+
+  useEffect(() => {
+    if (polygonData.length > 0) {
+      const allLayers = Array.from(new Set(polygonData.map(p => p.layer)));
+      console.log('🔍 Detected layers from polygons:', allLayers);
+      
+      setLayerVisibility(prev => {
+        const updated = { ...prev };
+        allLayers.forEach(layer => {
+          if (!(layer in updated)) {
+            console.log('➕ Adding new layer to visibility:', layer);
+            updated[layer] = true;
+          }
+        });
+        return updated;
+      });
+    }
+  }, [polygonData]);
   const [mapOpacity, setMapOpacity] = useState([80]);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
