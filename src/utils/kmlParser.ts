@@ -117,6 +117,10 @@ export const convertKMLToPolygonObjects = (kmlPolygons: KMLPolygon[]) => {
   
   return kmlPolygons.flatMap((kmlPoly, index) => {
     return kmlPoly.coordinates.map((coords, polyIndex) => {
+      const areaInHectares = calculatePolygonArea(coords);
+      const areaInKm2 = areaInHectares / 100;
+      const validArea = areaInKm2 < 0.000001 ? 0.000001 : parseFloat(areaInKm2.toFixed(6));
+
       const normalizedCoords = coords.map(([lng, lat]: [number, number]) => {
         const x = ((lng + 180) / 360) * 100;
         const y = ((90 - lat) / 180) * 100;
@@ -124,10 +128,6 @@ export const convertKMLToPolygonObjects = (kmlPolygons: KMLPolygon[]) => {
       });
 
       const color = colors[(index + polyIndex) % colors.length];
-
-      const areaInHectares = calculatePolygonArea(normalizedCoords);
-      const areaInKm2 = areaInHectares / 100;
-      const validArea = areaInKm2 < 0.000001 ? 0.000001 : parseFloat(areaInKm2.toFixed(6));
 
       return {
         id: `kml-${Date.now()}-${index}-${polyIndex}-${Math.random().toString(36).substr(2, 9)}`,

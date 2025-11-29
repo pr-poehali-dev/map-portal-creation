@@ -87,6 +87,17 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
           console.log(`  └─ MultiPolygon with ${feature.geometry.coordinates.length} parts`);
         }
 
+        const coordinatesForCalculation = outerRings.length === 1 ? outerRings[0] : outerRings[0];
+        const calculatedAreaInHectares = calculatePolygonArea(coordinatesForCalculation);
+        const areaInKm2 = calculatedAreaInHectares / 100;
+        
+        console.log(`  📏 Calculated area: ${formatArea(calculatedAreaInHectares)} (${areaInKm2.toFixed(6)} km²)`);
+        if (properties.area) {
+          console.log(`  ℹ️ Original area from file: ${properties.area} (ignored, using calculated)`);
+        }
+        
+        const validArea = areaInKm2 < 0.000001 ? 0.000001 : parseFloat(areaInKm2.toFixed(6));
+
         const normalizedRings = outerRings.map(ring => 
           ring.map(([lng, lat]: [number, number]) => {
             const x = ((lng + 180) / 360) * 100;
@@ -97,17 +108,6 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
 
         const colors = ['#0EA5E9', '#8B5CF6', '#10B981', '#F97316', '#EAB308', '#EC4899'];
         const color = colors[index % colors.length];
-
-        const coordinatesForCalculation = normalizedRings.length === 1 ? normalizedRings[0] : normalizedRings[0];
-        const calculatedAreaInHectares = calculatePolygonArea(coordinatesForCalculation);
-        const areaInKm2 = calculatedAreaInHectares / 100;
-        
-        console.log(`  📏 Calculated area: ${formatArea(calculatedAreaInHectares)} (${areaInKm2.toFixed(6)} km²)`);
-        if (properties.area) {
-          console.log(`  ℹ️ Original area from file: ${properties.area} (ignored, using calculated)`);
-        }
-        
-        const validArea = areaInKm2 < 0.000001 ? 0.000001 : parseFloat(areaInKm2.toFixed(6));
 
         const polygonObject = {
           id: `imported-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,

@@ -13,9 +13,7 @@ export function calculatePolygonArea(coordinates: number[][]): number {
     closedCoordinates.push(closedCoordinates[0]);
   }
 
-  const turfCoordinates = closedCoordinates.map(coord => [coord[1], coord[0]]);
-  
-  const polygon = turf.polygon([turfCoordinates]);
+  const polygon = turf.polygon([closedCoordinates]);
   const areaInSquareMeters = turf.area(polygon);
   const areaInHectares = areaInSquareMeters / 10000;
   
