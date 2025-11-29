@@ -91,7 +91,7 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
           const color = colors[(index + polyIndex) % colors.length];
 
           const area = properties.area ? parseFloat(properties.area) : Math.random() * 100 + 10;
-          const validArea = isNaN(area) || area <= 0 ? 10.0 : parseFloat(area.toFixed(2));
+          const validArea = isNaN(area) || area < 0.01 ? 10.0 : parseFloat(area.toFixed(2));
 
           polygons.push({
             id: `imported-${Date.now()}-${index}-${polyIndex}-${Math.random().toString(36).substr(2, 9)}`,
