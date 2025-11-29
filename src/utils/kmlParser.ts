@@ -132,7 +132,7 @@ export const convertKMLToPolygonObjects = (kmlPolygons: KMLPolygon[]) => {
       };
 
       const area = calculateArea(normalizedCoords);
-      const validArea = isNaN(area) || area <= 0 ? 0.1 : parseFloat(area.toFixed(2));
+      const validArea = isNaN(area) || area <= 0 ? 1.0 : parseFloat(area.toFixed(2));
 
       return {
         id: `kml-${Date.now()}-${index}-${polyIndex}-${Math.random().toString(36).substr(2, 9)}`,
