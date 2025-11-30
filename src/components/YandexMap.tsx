@@ -209,7 +209,7 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
       if (!cadastralLayerRef.current) {
         const RosreestrLayer = function () {
           return new window.ymaps.Layer(
-            'https://pkk.rosreestr.ru/arcgis/rest/services/PKK6/Cadastre/MapServer/tile/%z/%y/%x',
+            'https://pkk.rosreestr.ru/arcgis/rest/services/PKK6/CadastreObjects/MapServer/tile/%z/%y/%x',
             {
               tileTransparent: true
             }
