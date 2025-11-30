@@ -69,16 +69,22 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
     }
   };
 
-  const handleAttributeChange = (key: string, value: any) => {
-    setEditedObject(prev => ({
-      ...prev,
-      attributes: { ...prev.attributes, [key]: value }
-    }));
+  const handleAttributeChange = (templateName: string, value: any) => {
+    setEditedObject(prev => {
+      const existingKey = Object.keys(prev.attributes).find(
+        key => key.toLowerCase() === templateName.toLowerCase()
+      ) || templateName;
+      
+      return {
+        ...prev,
+        attributes: { ...prev.attributes, [existingKey]: value }
+      };
+    });
     
-    if (errors[key]) {
+    if (errors[templateName]) {
       setErrors(prev => {
         const newErrors = { ...prev };
-        delete newErrors[key];
+        delete newErrors[templateName];
         return newErrors;
       });
     }
@@ -89,7 +95,11 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
 
     templates.forEach(template => {
       if (template.is_required) {
-        const value = editedObject.attributes[template.name];
+        const existingKey = Object.keys(editedObject.attributes).find(
+          key => key.toLowerCase() === template.name.toLowerCase()
+        );
+        const value = existingKey ? editedObject.attributes[existingKey] : '';
+        
         if (!value || (typeof value === 'string' && !value.trim())) {
           newErrors[template.name] = `${template.name} обязательно для заполнения`;
         }
@@ -107,7 +117,11 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
   };
 
   const renderField = (template: AttributeTemplate) => {
-    const value = editedObject.attributes[template.name] || '';
+    const attributeKey = Object.keys(editedObject.attributes).find(
+      key => key.toLowerCase() === template.name.toLowerCase()
+    ) || template.name;
+    
+    const value = editedObject.attributes[attributeKey] || '';
 
     switch (template.field_type) {
       case 'text':
