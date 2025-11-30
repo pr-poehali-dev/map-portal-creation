@@ -226,7 +226,10 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
             const maxX = (x + 1) * tileSize * resolution - originShift;
             const minY = originShift - (y + 1) * tileSize * resolution;
             
-            const bbox = `${minX},${minY},${maxX},${maxY}`;
+            // RoundEx с 10 знаками после запятой (как в SAS.Planet)
+            const round10 = (num: number) => Math.round(num * 1e10) / 1e10;
+            
+            const bbox = `${round10(minX)},${round10(minY)},${round10(maxX)},${round10(maxY)}`;
             
             // Базовый URL из PARAMS
             const baseUrl = 'https://nspd.gov.ru/api/aeggis/v3/36048/wms?REQUEST=GetMap&SERVICE=WMS&VERSION=1.3.0&FORMAT=image%2Fpng&STYLES=&TRANSPARENT=true&LAYERS=36048&RANDOM=&WIDTH=256&HEIGHT=256&CRS=EPSG%3A3857&BBOX=';
