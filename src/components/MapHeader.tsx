@@ -11,9 +11,6 @@ interface MapHeaderProps {
   setShowAllTrigger: (fn: (prev: number) => number) => void;
   useYandexMap: boolean;
   setUseYandexMap: (value: boolean) => void;
-  showCadastralLayer: boolean;
-  setShowCadastralLayer: (value: boolean) => void;
-  setCadastralSearchOpen: (value: boolean) => void;
   setBulkImportOpen: (value: boolean) => void;
   handleExportAll: () => void;
   handleExportFiltered: () => void;
@@ -28,9 +25,6 @@ export default function MapHeader({
   setShowAllTrigger,
   useYandexMap,
   setUseYandexMap,
-  showCadastralLayer,
-  setShowCadastralLayer,
-  setCadastralSearchOpen,
   setBulkImportOpen,
   handleExportAll,
   handleExportFiltered,
@@ -67,32 +61,14 @@ export default function MapHeader({
         </Button>
         
         {useYandexMap && (
-          <>
-            <Button
-              variant={showCadastralLayer ? "default" : "outline"}
-              size="sm"
-              onClick={() => setShowCadastralLayer(!showCadastralLayer)}
-            >
-              <Icon name="Map" size={16} className="mr-2" />
-              Кадастр
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCadastralSearchOpen(true)}
-            >
-              <Icon name="Search" size={16} className="mr-2" />
-              Поиск участка
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setBulkImportOpen(true)}
-            >
-              <Icon name="Upload" size={16} className="mr-2" />
-              Массовый импорт
-            </Button>
-          </>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setBulkImportOpen(true)}
+          >
+            <Icon name="Upload" size={16} className="mr-2" />
+            Массовый импорт
+          </Button>
         )}
         
         <DropdownMenu>

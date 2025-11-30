@@ -252,54 +252,6 @@ export function useMapHandlers({
     }
   };
 
-  const handleSaveCadastralParcel = async (parcelData: { cadastralNumber: string; coordinates: [number, number]; area?: number; address?: string; category?: string }) => {
-    try {
-      const coords: [number, number][] = [
-        [(parcelData.coordinates[1] + 180) / 360 * 100, (90 - parcelData.coordinates[0]) / 180 * 100],
-        [(parcelData.coordinates[1] + 180.001) / 360 * 100, (90 - parcelData.coordinates[0]) / 180 * 100],
-        [(parcelData.coordinates[1] + 180.001) / 360 * 100, (90 - parcelData.coordinates[0] - 0.001) / 180 * 100],
-        [(parcelData.coordinates[1] + 180) / 360 * 100, (90 - parcelData.coordinates[0] - 0.001) / 180 * 100]
-      ];
-
-      let areaInSquareMeters: number;
-      if (parcelData.area) {
-        areaInSquareMeters = parcelData.area;
-      } else {
-        areaInSquareMeters = calculatePolygonArea(coords);
-      }
-
-      const newPolygon: PolygonObject = {
-        id: parcelData.cadastralNumber.replace(/:/g, '_'),
-        name: parcelData.address || `Участок ${parcelData.cadastralNumber}`,
-        type: 'Кадастровый участок',
-        area: areaInSquareMeters,
-        status: 'Активный',
-        coordinates: coords,
-        color: '#F59E0B',
-        layer: 'Кадастровые участки',
-        visible: true,
-        attributes: {
-          'Кадастровый номер': parcelData.cadastralNumber,
-          'Категория': parcelData.category || 'Земельный участок'
-        }
-      };
-
-      await polygonApi.create(newPolygon);
-      await loadPolygons();
-
-      setLayerVisibility(prev => ({
-        ...prev,
-        'Кадастровые участки': true
-      }));
-    } catch (error) {
-      toast({
-        title: 'Ошибка сохранения',
-        description: 'Не удалось сохранить участок в базу данных',
-        variant: 'destructive'
-      });
-    }
-  };
-
   const handleBulkImport = async (parcels: Array<{ cadastralNumber: string; coordinates: [number, number]; area?: number; address?: string; category?: string }>) => {
     try {
       const newPolygons = parcels.map(parcelData => {
@@ -363,7 +315,6 @@ export function useMapHandlers({
     handleSaveObject,
     handleDeleteClick,
     handleDeleteConfirm,
-    handleSaveCadastralParcel,
     handleBulkImport
   };
 }

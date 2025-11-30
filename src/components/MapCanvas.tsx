@@ -9,8 +9,6 @@ interface MapCanvasProps {
   setSelectedObject: (obj: PolygonObject | null) => void;
   mapOpacity: number[];
   showAllTrigger: number;
-  showCadastralLayer: boolean;
-  cadastralSearchCoords: [number, number] | null;
 }
 
 export default function MapCanvas({
@@ -19,9 +17,7 @@ export default function MapCanvas({
   selectedObject,
   setSelectedObject,
   mapOpacity,
-  showAllTrigger,
-  showCadastralLayer,
-  cadastralSearchCoords
+  showAllTrigger
 }: MapCanvasProps) {
   return (
     <div className="flex-1 relative bg-muted/30 overflow-hidden">
@@ -32,8 +28,6 @@ export default function MapCanvas({
           onPolygonClick={setSelectedObject}
           opacity={mapOpacity[0] / 100}
           showAllTrigger={showAllTrigger}
-          showCadastralLayer={showCadastralLayer}
-          cadastralSearchCoords={cadastralSearchCoords}
         />
       ) : (
         <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">

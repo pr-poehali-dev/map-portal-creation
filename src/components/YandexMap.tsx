@@ -8,8 +8,6 @@ interface YandexMapProps {
   onPolygonClick?: (polygon: PolygonObject) => void;
   opacity?: number;
   showAllTrigger?: number;
-  showCadastralLayer?: boolean;
-  cadastralSearchCoords?: [number, number] | null;
 }
 
 declare global {
@@ -18,13 +16,11 @@ declare global {
   }
 }
 
-export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick, opacity = 0.8, showAllTrigger = 0, showCadastralLayer = false, cadastralSearchCoords = null }: YandexMapProps) {
+export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick, opacity = 0.8, showAllTrigger = 0 }: YandexMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const polygonObjectsRef = useRef<Map<string, any>>(new Map());
   const isInitialLoadRef = useRef<boolean>(true);
-  const cadastralLayerRef = useRef<any>(null);
-  const cadastralPolygonsRef = useRef<any[]>([]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -202,88 +198,6 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
       );
     }
   }, [showAllTrigger, polygons]);
-
-  useEffect(() => {
-    if (!mapInstanceRef.current || !window.ymaps) return;
-
-    // Очистка предыдущих кадастровых полигонов
-    cadastralPolygonsRef.current.forEach(polygon => {
-      mapInstanceRef.current.geoObjects.remove(polygon);
-    });
-    cadastralPolygonsRef.current = [];
-
-    if (showCadastralLayer) {
-      // Показываем информационную плашку о кадастровом слое
-      const center = mapInstanceRef.current.getCenter();
-      
-      const infoPlacemark = new window.ymaps.Placemark(
-        center,
-        {
-          balloonContent: `
-            <div style="padding: 12px; max-width: 300px;">
-              <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: 600;">Кадастровый слой</h3>
-              <p style="margin: 0 0 8px 0; font-size: 13px; color: #666;">
-                К сожалению, API Росреестра блокирует запросы от облачных серверов.
-              </p>
-              <p style="margin: 0 0 12px 0; font-size: 13px; color: #666;">
-                Для просмотра кадастровых границ используйте официальную карту:
-              </p>
-              <a href="https://pkk.rosreestr.ru/" target="_blank" style="
-                display: inline-block;
-                padding: 8px 16px;
-                background: #4CAF50;
-                color: white;
-                text-decoration: none;
-                border-radius: 4px;
-                font-size: 13px;
-                font-weight: 500;
-              ">
-                Открыть ПКК Росреестра
-              </a>
-              <p style="margin: 12px 0 0 0; font-size: 12px; color: #999;">
-                Вы можете искать участки по кадастровому номеру через кнопку "Поиск" в шапке карты.
-              </p>
-            </div>
-          `
-        },
-        {
-          preset: 'islands#blueInfoIcon'
-        }
-      );
-      
-      mapInstanceRef.current.geoObjects.add(infoPlacemark);
-      cadastralPolygonsRef.current.push(infoPlacemark);
-      
-      // Автоматически открываем балун
-      infoPlacemark.balloon.open();
-      
-      console.log('ℹ️ Cadastral layer info shown - Rosreestr blocks cloud server requests');
-    }
-  }, [showCadastralLayer]);
-
-  useEffect(() => {
-    if (!cadastralSearchCoords || !mapInstanceRef.current) return;
-
-    mapInstanceRef.current.setCenter(cadastralSearchCoords, 17, {
-      duration: 500
-    });
-
-    const placemark = new window.ymaps.Placemark(
-      cadastralSearchCoords,
-      {
-        hintContent: 'Найденный участок'
-      },
-      {
-        preset: 'islands#redDotIcon'
-      }
-    );
-
-    mapInstanceRef.current.geoObjects.add(placemark);
-
-    setTimeout(() => {
-      mapInstanceRef.current.geoObjects.remove(placemark);
-    }, 5000);
-  }, [cadastralSearchCoords]);
 
   useEffect(() => {
     if (!selectedPolygonId || !mapInstanceRef.current || !window.ymaps) return;

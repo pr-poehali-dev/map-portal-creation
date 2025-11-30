@@ -55,9 +55,6 @@ export default function Index() {
   const [showAllTrigger, setShowAllTrigger] = useState(0);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [objectToDelete, setObjectToDelete] = useState<string | null>(null);
-  const [showCadastralLayer, setShowCadastralLayer] = useState(false);
-  const [cadastralSearchOpen, setCadastralSearchOpen] = useState(false);
-  const [cadastralSearchCoords, setCadastralSearchCoords] = useState<[number, number] | null>(null);
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [viewingTrash, setViewingTrash] = useState(false);
   const [confirmPermanentDelete, setConfirmPermanentDelete] = useState<string | null>(null);
@@ -76,7 +73,6 @@ export default function Index() {
     handleSaveObject,
     handleDeleteClick,
     handleDeleteConfirm,
-    handleSaveCadastralParcel,
     handleBulkImport
   } = useMapHandlers({
     polygonData,
@@ -142,9 +138,6 @@ export default function Index() {
           setShowAllTrigger={setShowAllTrigger}
           useYandexMap={useYandexMap}
           setUseYandexMap={setUseYandexMap}
-          showCadastralLayer={showCadastralLayer}
-          setShowCadastralLayer={setShowCadastralLayer}
-          setCadastralSearchOpen={setCadastralSearchOpen}
           setBulkImportOpen={setBulkImportOpen}
           handleExportAll={handleExportAll}
           handleExportFiltered={() => handleExportFiltered(filteredData)}
@@ -159,8 +152,6 @@ export default function Index() {
           setSelectedObject={setSelectedObject}
           mapOpacity={mapOpacity}
           showAllTrigger={showAllTrigger}
-          showCadastralLayer={showCadastralLayer}
-          cadastralSearchCoords={cadastralSearchCoords}
         />
 
         <ObjectDetailsSheet
@@ -196,10 +187,6 @@ export default function Index() {
         importDialogOpen={importDialogOpen}
         setImportDialogOpen={setImportDialogOpen}
         handleImport={handleImport}
-        cadastralSearchOpen={cadastralSearchOpen}
-        setCadastralSearchOpen={setCadastralSearchOpen}
-        setCadastralSearchCoords={setCadastralSearchCoords}
-        handleSaveCadastralParcel={handleSaveCadastralParcel}
         bulkImportOpen={bulkImportOpen}
         setBulkImportOpen={setBulkImportOpen}
         handleBulkImport={handleBulkImport}

@@ -1,6 +1,5 @@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import GeoImportDialog from '@/components/GeoImportDialog';
-import CadastralSearch from '@/components/CadastralSearch';
 import BulkCadastralImport from '@/components/BulkCadastralImport';
 import { PolygonObject } from '@/types/polygon';
 
@@ -8,10 +7,6 @@ interface MapDialogsProps {
   importDialogOpen: boolean;
   setImportDialogOpen: (open: boolean) => void;
   handleImport: (polygons: PolygonObject[]) => Promise<void>;
-  cadastralSearchOpen: boolean;
-  setCadastralSearchOpen: (open: boolean) => void;
-  setCadastralSearchCoords: (coords: [number, number] | null) => void;
-  handleSaveCadastralParcel: (parcelData: { cadastralNumber: string; coordinates: [number, number]; area?: number; address?: string; category?: string }) => Promise<void>;
   bulkImportOpen: boolean;
   setBulkImportOpen: (open: boolean) => void;
   handleBulkImport: (parcels: Array<{ cadastralNumber: string; coordinates: [number, number]; area?: number; address?: string; category?: string }>) => Promise<void>;
@@ -31,10 +26,6 @@ export default function MapDialogs({
   importDialogOpen,
   setImportDialogOpen,
   handleImport,
-  cadastralSearchOpen,
-  setCadastralSearchOpen,
-  setCadastralSearchCoords,
-  handleSaveCadastralParcel,
   bulkImportOpen,
   setBulkImportOpen,
   handleBulkImport,
@@ -55,13 +46,6 @@ export default function MapDialogs({
         open={importDialogOpen}
         onOpenChange={setImportDialogOpen}
         onImport={handleImport}
-      />
-
-      <CadastralSearch
-        open={cadastralSearchOpen}
-        onOpenChange={setCadastralSearchOpen}
-        onParcelFound={(coords) => setCadastralSearchCoords(coords)}
-        onSave={handleSaveCadastralParcel}
       />
 
       <BulkCadastralImport
