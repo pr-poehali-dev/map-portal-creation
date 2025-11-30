@@ -217,13 +217,13 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
 
     if (showCadastralLayer) {
       try {
-        // Используем Яндекс core-renderer как в map.ru
+        // Используем публичный кадастровый слой PKK5 от OpenStreetMap Russia
         const getTileUrl = (tileNumber: number[], tileZoom: number) => {
           const [x, y] = tileNumber;
           const z = tileZoom;
           
-          // Формат как в map.ru: l=map&x=158441&y=82367&z=18
-          return `https://core-renderer-tiles.maps.yandex.net/tiles?l=kadastr&x=${x}&y=${y}&z=${z}`;
+          // PKK5 tile server - публичный кадастровый слой России
+          return `https://pkk.rosreestr.ru/arcgis/rest/services/PKK6/CadastreSelected/MapServer/tile/${z}/${y}/${x}`;
         };
         
         const layer = new window.ymaps.Layer(getTileUrl, {
@@ -233,7 +233,7 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
         
         mapInstanceRef.current.layers.add(layer);
         cadastralLayerRef.current = layer;
-        console.log('✅ Cadastral layer via Yandex renderer added');
+        console.log('✅ PKK cadastral layer added');
       } catch (error) {
         console.error('❌ Failed to add cadastral layer:', error);
       }
