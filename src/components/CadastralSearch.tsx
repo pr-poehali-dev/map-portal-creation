@@ -57,11 +57,16 @@ export default function CadastralSearch({ open, onOpenChange, onSearchResult, on
     setIsSearching(true);
 
     try {
-      // Используем CORS proxy для обхода ограничений
+      // Используем прямой запрос к API Росреестра из браузера (обходит блокировку облачных IP)
       const apiUrl = `https://pkk.rosreestr.ru/api/features/1/${cadastralNumber}`;
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`;
       
-      const response = await fetch(proxyUrl);
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        },
+        mode: 'cors'
+      });
 
       if (!response.ok) {
         throw new Error('Участок не найден');
