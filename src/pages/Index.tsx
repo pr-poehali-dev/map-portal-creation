@@ -6,6 +6,7 @@ import MapHeader from '@/components/MapHeader';
 import MapCanvas from '@/components/MapCanvas';
 import ObjectDetailsSheet from '@/components/ObjectDetailsSheet';
 import MapDialogs from '@/components/MapDialogs';
+import AIFeaturesTour from '@/components/AIFeaturesTour';
 import { PolygonObject } from '@/types/polygon';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMapData, layers } from '@/hooks/useMapData';
@@ -201,6 +202,8 @@ export default function Index() {
         handleEmptyTrash={handleEmptyTrash}
         trashDataLength={trashData.length}
       />
+
+      <AIFeaturesTour />
     </div>
   );
 }

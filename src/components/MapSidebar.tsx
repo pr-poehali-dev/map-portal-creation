@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import Icon from '@/components/ui/icon';
 import { PolygonObject } from '@/types/polygon';
 import { formatArea } from '@/utils/geoUtils';
 import AIAssistant from './AIAssistant';
+import { BadgePulse } from '@/components/ui/badge-pulse';
 
 interface MapSidebarProps {
   user: any;
@@ -70,11 +71,25 @@ export default function MapSidebar({
   handleDeleteAll,
   loadSampleData
 }: MapSidebarProps) {
+  const [showAIBadge, setShowAIBadge] = useState(true);
+
   useEffect(() => {
     if (viewingTrash && user?.role === 'admin') {
       loadTrash();
     }
   }, [viewingTrash]);
+
+  useEffect(() => {
+    const hasSeenAI = localStorage.getItem('ai-badge-seen');
+    if (hasSeenAI) {
+      setShowAIBadge(false);
+    }
+  }, []);
+
+  const handleAITabClick = () => {
+    setShowAIBadge(false);
+    localStorage.setItem('ai-badge-seen', 'true');
+  };
 
   return (
     <aside className="w-96 border-r border-sidebar-border bg-sidebar-background flex flex-col h-screen">
@@ -140,9 +155,20 @@ export default function MapSidebar({
             <Icon name="Eye" size={16} className="mr-2" />
             Слои
           </TabsTrigger>
-          <TabsTrigger value="ai" className="flex-1">
-            <Icon name="Bot" size={16} className="mr-2" />
-            AI
+          <TabsTrigger value="ai" className="flex-1 relative" onClick={handleAITabClick}>
+            {showAIBadge ? (
+              <BadgePulse>
+                <div className="flex items-center">
+                  <Icon name="Bot" size={16} className="mr-2" />
+                  AI
+                </div>
+              </BadgePulse>
+            ) : (
+              <>
+                <Icon name="Bot" size={16} className="mr-2" />
+                AI
+              </>
+            )}
           </TabsTrigger>
           {user?.role === 'admin' && (
             <TabsTrigger value="trash" className="flex-1">
