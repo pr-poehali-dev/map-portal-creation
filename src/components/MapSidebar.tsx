@@ -161,7 +161,7 @@ export default function MapSidebar({
               {filteredData.map(item => (
                 <Card
                   key={item.id}
-                  className={`p-4 cursor-pointer transition-all hover:shadow-lg border-2 ${
+                  className={`p-2.5 cursor-pointer transition-all hover:shadow-lg border-2 ${
                     selectedObject?.id === item.id ? 'border-primary bg-primary/5' : 'border-transparent'
                   }`}
                   onClick={() => setSelectedObject(item)}
