@@ -1,0 +1,48 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS request for CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedHeaders": {
+        "Access-Control-Allow-Origin": "*"
+      }
+    },
+    {
+      "name": "Land analysis with objectData",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "mode": "land-analysis",
+        "objectData": {
+          "cadastralNumber": "77:01:0001001:1",
+          "area": 1500,
+          "address": "Москва, ул. Примерная, 1"
+        },
+        "userQuery": "Подходит ли для жилого строительства?"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "result": "string",
+        "mode": "land-analysis"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Chat mode",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "mode": "chat",
+        "userQuery": "Что такое кадастровый номер?"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "result": "string",
+        "mode": "chat"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
