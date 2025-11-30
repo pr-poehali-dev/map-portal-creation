@@ -9,8 +9,6 @@ interface MapHeaderProps {
   polygonData: PolygonObject[];
   selectedObject: PolygonObject | null;
   setShowAllTrigger: (fn: (prev: number) => number) => void;
-  useYandexMap: boolean;
-  setUseYandexMap: (value: boolean) => void;
   setBulkImportOpen: (value: boolean) => void;
   handleExportAll: () => void;
   handleExportFiltered: () => void;
@@ -23,8 +21,6 @@ export default function MapHeader({
   polygonData,
   selectedObject,
   setShowAllTrigger,
-  useYandexMap,
-  setUseYandexMap,
   setBulkImportOpen,
   handleExportAll,
   handleExportFiltered,
@@ -54,22 +50,11 @@ export default function MapHeader({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setUseYandexMap(!useYandexMap)}
+          onClick={() => setBulkImportOpen(true)}
         >
-          <Icon name={useYandexMap ? "Grid3x3" : "Globe"} size={16} className="mr-2" />
-          {useYandexMap ? 'Схема' : 'Яндекс'}
+          <Icon name="Upload" size={16} className="mr-2" />
+          Массовый импорт
         </Button>
-        
-        {useYandexMap && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setBulkImportOpen(true)}
-          >
-            <Icon name="Upload" size={16} className="mr-2" />
-            Массовый импорт
-          </Button>
-        )}
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

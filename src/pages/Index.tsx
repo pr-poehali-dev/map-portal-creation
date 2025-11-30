@@ -52,7 +52,6 @@ export default function Index() {
   const [mapOpacity, setMapOpacity] = useState([80]);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [useYandexMap, setUseYandexMap] = useState(true);
   const [showAllTrigger, setShowAllTrigger] = useState(0);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [objectToDelete, setObjectToDelete] = useState<string | null>(null);
@@ -137,8 +136,6 @@ export default function Index() {
           polygonData={polygonData}
           selectedObject={selectedObject}
           setShowAllTrigger={setShowAllTrigger}
-          useYandexMap={useYandexMap}
-          setUseYandexMap={setUseYandexMap}
           setBulkImportOpen={setBulkImportOpen}
           handleExportAll={handleExportAll}
           handleExportFiltered={() => handleExportFiltered(filteredData)}
@@ -147,7 +144,7 @@ export default function Index() {
         />
 
         <MapCanvas
-          useYandexMap={useYandexMap}
+          useYandexMap={true}
           filteredData={filteredData}
           selectedObject={selectedObject}
           setSelectedObject={setSelectedObject}
