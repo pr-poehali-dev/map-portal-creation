@@ -217,42 +217,23 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
 
     if (showCadastralLayer) {
       try {
-        // WMS слой через Image Proxy
+        // Используем Яндекс core-renderer как в map.ru
         const getTileUrl = (tileNumber: number[], tileZoom: number) => {
           const [x, y] = tileNumber;
           const z = tileZoom;
           
-          // Web Mercator расчёт BBOX  
-          const tileSize = 256;
-          const earthRadius = 6378137;
-          const initialResolution = 2 * Math.PI * earthRadius / tileSize;
-          const originShift = 2 * Math.PI * earthRadius / 2.0;
-          const resolution = initialResolution / Math.pow(2, z);
-          
-          const minX = x * tileSize * resolution - originShift;
-          const maxY = originShift - y * tileSize * resolution;
-          const maxX = (x + 1) * tileSize * resolution - originShift;
-          const minY = originShift - (y + 1) * tileSize * resolution;
-          
-          const round10 = (num: number) => Math.round(num * 1e10) / 1e10;
-          const bbox = `${round10(minX)},${round10(minY)},${round10(maxX)},${round10(maxY)}`;
-          
-          const wmsUrl = `https://nspd.gov.ru/api/aeggis/v4/36048/wms?REQUEST=GetMap&SERVICE=WMS&VERSION=1.3.0&FORMAT=image%2Fpng&STYLES=&TRANSPARENT=true&LAYERS=36048&RANDOM=&WIDTH=256&HEIGHT=256&CRS=EPSG%3A3857&BBOX=${bbox}`;
-          
-          // Используем Images.weserv.nl как CORS proxy для изображений
-          return `https://images.weserv.nl/?url=${encodeURIComponent(wmsUrl)}`;
+          // Формат как в map.ru: l=map&x=158441&y=82367&z=18
+          return `https://core-renderer-tiles.maps.yandex.net/tiles?l=kadastr&x=${x}&y=${y}&z=${z}`;
         };
         
         const layer = new window.ymaps.Layer(getTileUrl, {
           tileTransparent: true,
-          projection: window.ymaps.projection.sphericalMercator,
-          // Добавляем crossOrigin для обхода CORS
-          tileUrlTemplate: getTileUrl
+          projection: window.ymaps.projection.sphericalMercator
         });
         
         mapInstanceRef.current.layers.add(layer);
         cadastralLayerRef.current = layer;
-        console.log('✅ NSPD cadastral layer added');
+        console.log('✅ Cadastral layer via Yandex renderer added');
       } catch (error) {
         console.error('❌ Failed to add cadastral layer:', error);
       }
