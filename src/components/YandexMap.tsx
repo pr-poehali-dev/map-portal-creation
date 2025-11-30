@@ -213,82 +213,51 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
     cadastralPolygonsRef.current = [];
 
     if (showCadastralLayer) {
-      const loadCadastralData = async () => {
-        try {
-          const zoom = mapInstanceRef.current.getZoom();
-          
-          // Загружаем только при высоком зуме (15+) чтобы не перегружать
-          if (zoom < 15) {
-            console.log('⏭️ Zoom too low for cadastral data, increase zoom to 15+');
-            return;
-          }
-          
-          const bounds = mapInstanceRef.current.getBounds();
-          const [[south, west], [north, east]] = bounds;
-          
-          // Запрос через наш backend прокси
-          const bbox = `${west},${south},${east},${north}`;
-          const backendUrl = 'https://functions.poehali.dev/2f81dfc7-e194-4d3d-b534-101134e59c05';
-          
-          console.log(`🔍 Loading cadastral data for bbox: ${bbox}`);
-          const response = await fetch(`${backendUrl}?bbox=${encodeURIComponent(bbox)}`);
-          
-          if (!response.ok) {
-            console.error(`❌ Backend error: ${response.status}`);
-            return;
-          }
-          
-          const geojson = await response.json();
-          
-          if (geojson.error) {
-            console.error('❌ API error:', geojson.error);
-            return;
-          }
-          
-          if (geojson.features && geojson.features.length > 0) {
-            geojson.features.forEach((feature: any) => {
-              if (feature.geometry && feature.geometry.type === 'Polygon') {
-                const coords = feature.geometry.coordinates[0].map(([lng, lat]: [number, number]) => [lat, lng]);
-                
-                const polygon = new window.ymaps.Polygon([coords], {
-                  hintContent: `Кадастровый номер: ${feature.properties?.cn || 'Не указан'}`
-                }, {
-                  fillColor: '#FF000033',
-                  strokeColor: '#FF0000',
-                  strokeWidth: 2,
-                  strokeOpacity: 0.7,
-                  fillOpacity: 0.2
-                });
-                
-                mapInstanceRef.current.geoObjects.add(polygon);
-                cadastralPolygonsRef.current.push(polygon);
-              }
-            });
-            
-            console.log(`✅ Loaded ${geojson.features.length} cadastral parcels`);
-          } else {
-            console.log('ℹ️ No cadastral parcels in this area');
-          }
-        } catch (error) {
-          console.error('❌ Failed to load cadastral data:', error);
+      // Показываем информационную плашку о кадастровом слое
+      const center = mapInstanceRef.current.getCenter();
+      
+      const infoPlacemark = new window.ymaps.Placemark(
+        center,
+        {
+          balloonContent: `
+            <div style="padding: 12px; max-width: 300px;">
+              <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: 600;">Кадастровый слой</h3>
+              <p style="margin: 0 0 8px 0; font-size: 13px; color: #666;">
+                К сожалению, API Росреестра блокирует запросы от облачных серверов.
+              </p>
+              <p style="margin: 0 0 12px 0; font-size: 13px; color: #666;">
+                Для просмотра кадастровых границ используйте официальную карту:
+              </p>
+              <a href="https://pkk.rosreestr.ru/" target="_blank" style="
+                display: inline-block;
+                padding: 8px 16px;
+                background: #4CAF50;
+                color: white;
+                text-decoration: none;
+                border-radius: 4px;
+                font-size: 13px;
+                font-weight: 500;
+              ">
+                Открыть ПКК Росреестра
+              </a>
+              <p style="margin: 12px 0 0 0; font-size: 12px; color: #999;">
+                Вы можете искать участки по кадастровому номеру через кнопку "Поиск" в шапке карты.
+              </p>
+            </div>
+          `
+        },
+        {
+          preset: 'islands#blueInfoIcon'
         }
-      };
-
-      loadCadastralData();
+      );
       
-      // Обновляем данные при изменении bounds карты (с debounce)
-      let timeout: any;
-      const boundsChangeHandler = () => {
-        clearTimeout(timeout);
-        timeout = setTimeout(loadCadastralData, 500);
-      };
+      mapInstanceRef.current.geoObjects.add(infoPlacemark);
+      cadastralPolygonsRef.current.push(infoPlacemark);
       
-      mapInstanceRef.current.events.add('boundschange', boundsChangeHandler);
+      // Автоматически открываем балун
+      infoPlacemark.balloon.open();
       
-      return () => {
-        clearTimeout(timeout);
-        mapInstanceRef.current?.events.remove('boundschange', boundsChangeHandler);
-      };
+      console.log('ℹ️ Cadastral layer info shown - Rosreestr blocks cloud server requests');
     }
   }, [showCadastralLayer]);
 
