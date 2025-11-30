@@ -24,6 +24,7 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
   const polygonObjectsRef = useRef<Map<string, any>>(new Map());
   const isInitialLoadRef = useRef<boolean>(true);
   const cadastralLayerRef = useRef<any>(null);
+  const cadastralPolygonsRef = useRef<any[]>([]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -205,55 +206,75 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
   useEffect(() => {
     if (!mapInstanceRef.current || !window.ymaps) return;
 
-    // Очистка предыдущего слоя
-    if (cadastralLayerRef.current) {
-      try {
-        mapInstanceRef.current.layers.remove(cadastralLayerRef.current);
-      } catch (error) {
-        console.error('Failed to remove previous cadastral layer:', error);
-      }
-      cadastralLayerRef.current = null;
-    }
+    // Очистка предыдущих кадастровых полигонов
+    cadastralPolygonsRef.current.forEach(polygon => {
+      mapInstanceRef.current.geoObjects.remove(polygon);
+    });
+    cadastralPolygonsRef.current = [];
 
     if (showCadastralLayer) {
-      try {
-        // WMS через corsproxy.io
-        const getTileUrl = (tileNumber: number[], tileZoom: number) => {
-          const [x, y] = tileNumber;
-          const z = tileZoom;
+      const loadCadastralData = async () => {
+        try {
+          const bounds = mapInstanceRef.current.getBounds();
+          const [[south, west], [north, east]] = bounds;
           
-          // Web Mercator BBOX расчёт
-          const tileSize = 256;
-          const earthRadius = 6378137;
-          const initialResolution = 2 * Math.PI * earthRadius / tileSize;
-          const originShift = 2 * Math.PI * earthRadius / 2.0;
-          const resolution = initialResolution / Math.pow(2, z);
+          // Запрос к ArcGIS FeatureServer для получения векторных границ участков
+          const bbox = `${west},${south},${east},${north}`;
+          const url = `https://pkk.rosreestr.ru/arcgis/rest/services/PKK6/CadastreOriginal/MapServer/0/query`;
           
-          const minX = x * tileSize * resolution - originShift;
-          const maxY = originShift - y * tileSize * resolution;
-          const maxX = (x + 1) * tileSize * resolution - originShift;
-          const minY = originShift - (y + 1) * tileSize * resolution;
+          const params = new URLSearchParams({
+            f: 'geojson',
+            geometry: bbox,
+            geometryType: 'esriGeometryEnvelope',
+            spatialRel: 'esriSpatialRelIntersects',
+            outFields: 'cn,id',
+            returnGeometry: 'true',
+            inSR: '4326',
+            outSR: '4326'
+          });
           
-          const round10 = (num: number) => Math.round(num * 1e10) / 1e10;
-          const bbox = `${round10(minX)},${round10(minY)},${round10(maxX)},${round10(maxY)}`;
+          const response = await fetch(`${url}?${params}`);
+          const geojson = await response.json();
           
-          const wmsUrl = `https://nspd.gov.ru/api/aeggis/v4/36048/wms?REQUEST=GetMap&SERVICE=WMS&VERSION=1.3.0&FORMAT=image%2Fpng&STYLES=&TRANSPARENT=true&LAYERS=36048&WIDTH=256&HEIGHT=256&CRS=EPSG%3A3857&BBOX=${bbox}`;
-          
-          // Используем corsproxy.io для обхода CORS
-          return `https://corsproxy.io/?${encodeURIComponent(wmsUrl)}`;
-        };
-        
-        const layer = new window.ymaps.Layer(getTileUrl, {
-          tileTransparent: true,
-          projection: window.ymaps.projection.sphericalMercator
-        });
-        
-        mapInstanceRef.current.layers.add(layer);
-        cadastralLayerRef.current = layer;
-        console.log('✅ NSPD cadastral layer via corsproxy.io added');
-      } catch (error) {
-        console.error('❌ Failed to add cadastral layer:', error);
-      }
+          if (geojson.features && geojson.features.length > 0) {
+            geojson.features.forEach((feature: any) => {
+              if (feature.geometry.type === 'Polygon') {
+                const coords = feature.geometry.coordinates[0].map(([lng, lat]: [number, number]) => [lat, lng]);
+                
+                const polygon = new window.ymaps.Polygon([coords], {
+                  hintContent: `Кадастровый номер: ${feature.properties.cn || 'Не указан'}`
+                }, {
+                  fillColor: '#FF000033',
+                  strokeColor: '#FF0000',
+                  strokeWidth: 2,
+                  strokeOpacity: 0.7,
+                  fillOpacity: 0.2
+                });
+                
+                mapInstanceRef.current.geoObjects.add(polygon);
+                cadastralPolygonsRef.current.push(polygon);
+              }
+            });
+            
+            console.log(`✅ Loaded ${geojson.features.length} cadastral parcels`);
+          }
+        } catch (error) {
+          console.error('❌ Failed to load cadastral data:', error);
+        }
+      };
+
+      loadCadastralData();
+      
+      // Обновляем данные при изменении bounds карты
+      const boundsChangeHandler = () => {
+        loadCadastralData();
+      };
+      
+      mapInstanceRef.current.events.add('boundschange', boundsChangeHandler);
+      
+      return () => {
+        mapInstanceRef.current?.events.remove('boundschange', boundsChangeHandler);
+      };
     }
   }, [showCadastralLayer]);
 
