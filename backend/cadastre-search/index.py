@@ -7,17 +7,6 @@ Returns: Parcel data with coordinates, area, address
 import requests
 import json
 from typing import Dict, Any
-from requests.adapters import HTTPAdapter
-from urllib3.poolmanager import PoolManager
-import ssl
-
-class SSLAdapter(HTTPAdapter):
-    def init_poolmanager(self, *args, **kwargs):
-        context = ssl.create_default_context()
-        context.check_hostname = False
-        context.verify_mode = ssl.CERT_NONE
-        kwargs['ssl_context'] = context
-        return super().init_poolmanager(*args, **kwargs)
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'GET')
@@ -59,18 +48,24 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'error': 'Missing cadastral_number parameter'})
         }
     
-    pkk_url = f'https://pkk.rosreestr.ru/api/features/1/{cadastral_number}'
+    # Используем публичный API через GET параметр text
+    pkk_url = 'https://pkk.rosreestr.ru/api/features/1'
     
     headers = {
-        'Referer': 'https://pkk.rosreestr.ru/',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'ru-RU,ru;q=0.9',
+        'Referer': 'https://pkk.rosreestr.ru/'
     }
     
-    session = requests.Session()
-    session.mount('https://', SSLAdapter())
+    # Используем параметр text для поиска
+    request_params = {
+        'text': cadastral_number,
+        'tolerance': 0
+    }
     
     try:
-        response = session.get(pkk_url, headers=headers, timeout=15)
+        response = requests.get(pkk_url, headers=headers, params=request_params, timeout=15, verify=False)
         
         if response.status_code == 404:
             return {

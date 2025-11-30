@@ -57,9 +57,11 @@ export default function CadastralSearch({ open, onOpenChange, onSearchResult, on
     setIsSearching(true);
 
     try {
-      const response = await fetch(
-        `https://functions.poehali.dev/7c111486-6b28-49e2-be67-3419f98d69b7?cadastral_number=${encodeURIComponent(cadastralNumber)}`
-      );
+      // Используем CORS proxy для обхода ограничений
+      const apiUrl = `https://pkk.rosreestr.ru/api/features/1/${cadastralNumber}`;
+      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`;
+      
+      const response = await fetch(proxyUrl);
 
       if (!response.ok) {
         throw new Error('Участок не найден');
