@@ -49,13 +49,18 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
         const data = await response.json();
         setTemplates(data);
         
-        const newAttributes: Record<string, any> = { ...editedObject.attributes };
-        data.forEach((template: AttributeTemplate) => {
-          if (!(template.name in newAttributes) && template.default_value) {
-            newAttributes[template.name] = template.default_value;
-          }
+        setEditedObject(prev => {
+          console.log('📝 Existing attributes from object:', prev.attributes);
+          const newAttributes: Record<string, any> = { ...prev.attributes };
+          data.forEach((template: AttributeTemplate) => {
+            if (!(template.name in newAttributes) && template.default_value) {
+              console.log(`➕ Adding default value for ${template.name}: ${template.default_value}`);
+              newAttributes[template.name] = template.default_value;
+            }
+          });
+          console.log('✅ Final attributes:', newAttributes);
+          return { ...prev, attributes: newAttributes };
         });
-        setEditedObject(prev => ({ ...prev, attributes: newAttributes }));
       }
     } catch (error) {
       console.error('Failed to load attribute templates', error);
