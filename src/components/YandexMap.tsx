@@ -231,8 +231,8 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
             
             const bbox = `${round10(minX)},${round10(minY)},${round10(maxX)},${round10(maxY)}`;
             
-            // Базовый URL из PARAMS
-            const baseUrl = 'https://nspd.gov.ru/api/aeggis/v3/36048/wms?REQUEST=GetMap&SERVICE=WMS&VERSION=1.3.0&FORMAT=image%2Fpng&STYLES=&TRANSPARENT=true&LAYERS=36048&RANDOM=&WIDTH=256&HEIGHT=256&CRS=EPSG%3A3857&BBOX=';
+            // Базовый URL из PARAMS (v4 API)
+            const baseUrl = 'https://nspd.gov.ru/api/aeggis/v4/36048/wms?REQUEST=GetMap&SERVICE=WMS&VERSION=1.3.0&FORMAT=image%2Fpng&STYLES=&TRANSPARENT=true&LAYERS=36048&RANDOM=&WIDTH=256&HEIGHT=256&CRS=EPSG%3A3857&BBOX=';
             
             const directUrl = `${baseUrl}${bbox}`;
             
