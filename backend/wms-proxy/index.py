@@ -39,7 +39,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': 'Missing BBOX parameter'
         }
     
-    wms_url = 'https://nspd.gov.ru/api/aeggis/v3/36048/wms'
+    wms_url = 'https://nspd.gov.ru/api/aeggis/v4/36048/wms'
     
     wms_params = {
         'REQUEST': 'GetMap',
@@ -57,10 +57,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     headers = {
         'Referer': 'https://nspd.gov.ru/map?thematic=PKK&theme_id=1&is_copy_url=true&baseLayerId=&active_layers=36048',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'image/png,image/webp,image/apng,image/*,*/*;q=0.8',
-        'Accept-Language': 'ru-RU,ru;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Accept-Encoding': 'gzip, deflate, br, zstd',
+        'Sec-Fetch-Dest': 'image',
+        'Sec-Fetch-Mode': 'no-cors',
+        'Sec-Fetch-Site': 'same-origin',
+        'Origin': 'https://nspd.gov.ru',
+        'Connection': 'keep-alive'
     }
     
     try:

@@ -217,15 +217,30 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
 
     if (showCadastralLayer) {
       try {
-        // Кадастровый слой через tile server Росреестра
+        // WMS слой кадастровых границ из НСПД
         const getTileUrl = (tileNumber: number[], tileZoom: number) => {
           const [x, y] = tileNumber;
           const z = tileZoom;
           
-          const url = `https://pkk.rosreestr.ru/arcgis/rest/services/PKK6/CadastreObjects/MapServer/tile/${z}/${y}/${x}`;
-          console.log(`📍 Loading tile: z=${z}, x=${x}, y=${y}`);
+          // Web Mercator расчёт BBOX
+          const tileSize = 256;
+          const earthRadius = 6378137;
+          const initialResolution = 2 * Math.PI * earthRadius / tileSize;
+          const originShift = 2 * Math.PI * earthRadius / 2.0;
           
-          return url;
+          const resolution = initialResolution / Math.pow(2, z);
+          
+          const minX = x * tileSize * resolution - originShift;
+          const maxY = originShift - y * tileSize * resolution;
+          const maxX = (x + 1) * tileSize * resolution - originShift;
+          const minY = originShift - (y + 1) * tileSize * resolution;
+          
+          // Округление до 10 знаков
+          const round10 = (num: number) => Math.round(num * 1e10) / 1e10;
+          const bbox = `${round10(minX)},${round10(minY)},${round10(maxX)},${round10(maxY)}`;
+          
+          // Прямой запрос к NSPD v4 API (работает из браузера)
+          return `https://nspd.gov.ru/api/aeggis/v4/36048/wms?REQUEST=GetMap&SERVICE=WMS&VERSION=1.3.0&FORMAT=image%2Fpng&STYLES=&TRANSPARENT=true&LAYERS=36048&RANDOM=&WIDTH=256&HEIGHT=256&CRS=EPSG%3A3857&BBOX=${bbox}`;
         };
         
         const layer = new window.ymaps.Layer(getTileUrl, {
@@ -235,7 +250,7 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
         
         mapInstanceRef.current.layers.add(layer);
         cadastralLayerRef.current = layer;
-        console.log('✅ Cadastral layer added successfully');
+        console.log('✅ NSPD cadastral layer added');
       } catch (error) {
         console.error('❌ Failed to add cadastral layer:', error);
       }
