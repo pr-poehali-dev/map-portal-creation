@@ -93,18 +93,24 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    templates.forEach(template => {
-      if (template.is_required) {
-        const existingKey = Object.keys(editedObject.attributes).find(
-          key => key.toLowerCase() === template.name.toLowerCase()
-        );
-        const value = existingKey ? editedObject.attributes[existingKey] : '';
-        
-        if (!value || (typeof value === 'string' && !value.trim())) {
-          newErrors[template.name] = `${template.name} обязательно для заполнения`;
+    if (!editedObject.name || !editedObject.name.trim()) {
+      newErrors['name'] = 'Название обязательно для заполнения';
+    }
+
+    templates
+      .filter(template => template.name.toLowerCase() !== 'название')
+      .forEach(template => {
+        if (template.is_required) {
+          const existingKey = Object.keys(editedObject.attributes).find(
+            key => key.toLowerCase() === template.name.toLowerCase()
+          );
+          const value = existingKey ? editedObject.attributes[existingKey] : '';
+          
+          if (!value || (typeof value === 'string' && !value.trim())) {
+            newErrors[template.name] = `${template.name} обязательно для заполнения`;
+          }
         }
-      }
-    });
+      });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -217,20 +223,40 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        {templates.map(template => (
-          <div key={template.id}>
-            <Label htmlFor={template.name} className="text-sm font-semibold">
-              {template.name}
-              {template.is_required && <span className="text-destructive ml-1">*</span>}
-            </Label>
-            <div className="mt-2">
-              {renderField(template)}
-            </div>
-            {errors[template.name] && (
-              <p className="text-xs text-destructive mt-1">{errors[template.name]}</p>
-            )}
+        <div>
+          <Label htmlFor="name" className="text-sm font-semibold">
+            Название
+            <span className="text-destructive ml-1">*</span>
+          </Label>
+          <div className="mt-2">
+            <Input
+              id="name"
+              value={editedObject.name}
+              onChange={(e) => setEditedObject(prev => ({ ...prev, name: e.target.value }))}
+              placeholder="Введите название участка"
+            />
           </div>
-        ))}
+          {errors['name'] && (
+            <p className="text-xs text-destructive mt-1">{errors['name']}</p>
+          )}
+        </div>
+
+        {templates
+          .filter(template => template.name.toLowerCase() !== 'название')
+          .map(template => (
+            <div key={template.id}>
+              <Label htmlFor={template.name} className="text-sm font-semibold">
+                {template.name}
+                {template.is_required && <span className="text-destructive ml-1">*</span>}
+              </Label>
+              <div className="mt-2">
+                {renderField(template)}
+              </div>
+              {errors[template.name] && (
+                <p className="text-xs text-destructive mt-1">{errors[template.name]}</p>
+              )}
+            </div>
+          ))}
       </div>
 
       <div className="flex gap-3 pt-4 border-t">
