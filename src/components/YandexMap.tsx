@@ -208,38 +208,14 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
     if (showCadastralLayer) {
       if (!cadastralLayerRef.current) {
         try {
-          // WMS слой земельных участков из ЕГРН через НСПД
+          // Кадастровый слой через ArcGIS tile server Росреестра
           const getTileUrl = (tileNumber: number[], tileZoom: number) => {
             const [x, y] = tileNumber;
             const z = tileZoom;
             
-            // Web Mercator тайлы для EPSG:3857
-            const tileSize = 256;
-            const earthRadius = 6378137;
-            const initialResolution = 2 * Math.PI * earthRadius / tileSize;
-            const originShift = 2 * Math.PI * earthRadius / 2.0;
-            
-            const resolution = initialResolution / Math.pow(2, z);
-            
-            const minX = x * tileSize * resolution - originShift;
-            const maxY = originShift - y * tileSize * resolution;
-            const maxX = (x + 1) * tileSize * resolution - originShift;
-            const minY = originShift - (y + 1) * tileSize * resolution;
-            
-            // RoundEx с 10 знаками после запятой
-            const round10 = (num: number) => Math.round(num * 1e10) / 1e10;
-            
-            const bbox = `${round10(minX)},${round10(minY)},${round10(maxX)},${round10(maxY)}`;
-            
-            // Базовый URL из PARAMS (v4 API)
-            const baseUrl = 'https://nspd.gov.ru/api/aeggis/v4/36048/wms?REQUEST=GetMap&SERVICE=WMS&VERSION=1.3.0&FORMAT=image%2Fpng&STYLES=&TRANSPARENT=true&LAYERS=36048&RANDOM=&WIDTH=256&HEIGHT=256&CRS=EPSG%3A3857&BBOX=';
-            
-            const directUrl = `${baseUrl}${bbox}`;
-            
-            console.log('🗺️ Cadastral tile URL:', directUrl);
-            
-            // Пробуем напрямую (может работать из браузера)
-            return directUrl;
+            // Используем публичный ArcGIS сервер Росреестра
+            // Этот URL работает напрямую из браузера без CORS
+            return `https://pkk.rosreestr.ru/arcgis/rest/services/PKK6/CadastreObjects/MapServer/tile/${z}/${y}/${x}`;
           };
           
           const layer = new window.ymaps.Layer(getTileUrl, {
