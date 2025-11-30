@@ -1,0 +1,14 @@
+{
+  "tests": [
+    {
+      "name": "Test cadastre search with valid number",
+      "method": "GET",
+      "path": "/?cadastral_number=77:01:0001001:1234",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "feature": "object"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
