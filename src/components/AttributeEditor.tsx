@@ -8,6 +8,8 @@ import { Switch } from '@/components/ui/switch';
 import Icon from '@/components/ui/icon';
 import { PolygonObject } from '@/types/polygon';
 import { useAuth } from '@/contexts/AuthContext';
+import { analyzeWithAI } from '@/services/ai';
+import { toast } from 'sonner';
 
 interface AttributeTemplate {
   id: number;
@@ -119,6 +121,37 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
   const handleSave = () => {
     if (validate()) {
       onSave(editedObject);
+    }
+  };
+
+  const handleAutoFill = async () => {
+    try {
+      toast.info('Заполняю атрибуты через AI...');
+      const response = await analyzeWithAI({
+        objectData: {
+          name: editedObject.name,
+          type: editedObject.type,
+          area: editedObject.area,
+          layer: editedObject.layer,
+          cadastralNumber: editedObject.cadastralNumber,
+          coordinates: editedObject.coordinates,
+        },
+        mode: 'auto-fill',
+      });
+
+      const suggestions = JSON.parse(response.result);
+      
+      setEditedObject(prev => ({
+        ...prev,
+        attributes: {
+          ...prev.attributes,
+          ...suggestions,
+        },
+      }));
+
+      toast.success('Атрибуты успешно заполнены!');
+    } catch (error: any) {
+      toast.error('Ошибка автозаполнения. Проверьте OpenAI API ключ.');
     }
   };
 
@@ -260,6 +293,10 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
       </div>
 
       <div className="flex gap-3 pt-4 border-t">
+        <Button onClick={handleAutoFill} variant="outline" className="flex-1">
+          <Icon name="Sparkles" size={16} className="mr-2" />
+          AI Заполнение
+        </Button>
         <Button onClick={handleSave} className="flex-1">
           <Icon name="Save" size={16} className="mr-2" />
           Сохранить

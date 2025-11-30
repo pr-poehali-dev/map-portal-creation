@@ -11,6 +11,7 @@ import { Slider } from '@/components/ui/slider';
 import Icon from '@/components/ui/icon';
 import { PolygonObject } from '@/types/polygon';
 import { formatArea } from '@/utils/geoUtils';
+import AIAssistant from './AIAssistant';
 
 interface MapSidebarProps {
   user: any;
@@ -110,14 +111,22 @@ export default function MapSidebar({
           </Button>
         </div>
 
-        <div className="relative">
+        <div className="relative group">
           <Icon name="Search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-sidebar-foreground/40" />
           <Input
-            placeholder="Поиск объектов..."
+            placeholder="Поиск объектов... (попробуйте AI-поиск)"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-sidebar-accent border-sidebar-border text-sidebar-foreground"
+            className="pl-10 pr-10 bg-sidebar-accent border-sidebar-border text-sidebar-foreground"
           />
+          <Button
+            size="icon"
+            variant="ghost"
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+            title="Умный поиск через AI"
+          >
+            <Icon name="Sparkles" size={16} />
+          </Button>
         </div>
       </div>
 
@@ -130,6 +139,10 @@ export default function MapSidebar({
           <TabsTrigger value="layers" className="flex-1">
             <Icon name="Eye" size={16} className="mr-2" />
             Слои
+          </TabsTrigger>
+          <TabsTrigger value="ai" className="flex-1">
+            <Icon name="Bot" size={16} className="mr-2" />
+            AI
           </TabsTrigger>
           {user?.role === 'admin' && (
             <TabsTrigger value="trash" className="flex-1">
@@ -270,6 +283,10 @@ export default function MapSidebar({
               ))}
             </div>
           </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="ai" className="flex-1 flex flex-col mt-0 min-h-0 data-[state=inactive]:hidden">
+          <AIAssistant />
         </TabsContent>
 
         {user?.role === 'admin' && (

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -5,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import Icon from '@/components/ui/icon';
 import AttributeEditor from '@/components/AttributeEditor';
+import AIAnalysisDialog from '@/components/AIAnalysisDialog';
 import { PolygonObject } from '@/types/polygon';
 import { formatArea } from '@/utils/geoUtils';
 
@@ -27,9 +29,17 @@ export default function ObjectDetailsSheet({
   handleDeleteClick,
   handleExportSelected
 }: ObjectDetailsSheetProps) {
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+
   if (!selectedObject) return null;
 
   return (
+    <>
+      <AIAnalysisDialog
+        open={aiDialogOpen}
+        onOpenChange={setAiDialogOpen}
+        object={selectedObject}
+      />
     <Sheet open={!!selectedObject} onOpenChange={() => {
       setSelectedObject(null);
       setIsEditing(false);
@@ -49,10 +59,19 @@ export default function ObjectDetailsSheet({
           {!isEditing && (
             <div className="flex gap-2 flex-wrap mt-4">
               <Button
+                variant="default"
+                size="sm"
+                onClick={() => setAiDialogOpen(true)}
+                className="flex-1 min-w-[140px]"
+              >
+                <Icon name="Sparkles" size={16} className="mr-2" />
+                AI Анализ
+              </Button>
+              <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setIsEditing(true)}
-                className="flex-1 min-w-[140px]"
+                className="flex-1 min-w-[100px]"
               >
                 <Icon name="Edit" size={16} className="mr-2" />
                 Редактировать
@@ -61,10 +80,8 @@ export default function ObjectDetailsSheet({
                 variant="destructive"
                 size="sm"
                 onClick={() => handleDeleteClick(selectedObject.id)}
-                className="flex-1 min-w-[100px]"
               >
-                <Icon name="Trash2" size={16} className="mr-2" />
-                Удалить
+                <Icon name="Trash2" size={16} />
               </Button>
             </div>
           )}
@@ -144,5 +161,6 @@ export default function ObjectDetailsSheet({
         </div>
       </SheetContent>
     </Sheet>
+    </>
   );
 }
