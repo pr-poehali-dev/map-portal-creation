@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
-const ADMIN_API = 'https://functions.poehali.dev/3e92b954-4498-4bea-8de7-898ccb110b58';
+const ADMIN_API = 'https://functions.poehali.dev/083b2a5f-b050-44a3-b56d-a27ca04ec81b';
 
 export interface User {
   id: string;
