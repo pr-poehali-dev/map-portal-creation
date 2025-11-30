@@ -134,6 +134,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'body': json.dumps([dict(row) for row in layers], default=json_serializer)
                 }
+            
+            elif action == 'attributes':
+                cur.execute("SELECT * FROM attribute_templates ORDER BY sort_order ASC")
+                attributes = cur.fetchall()
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps([dict(row) for row in attributes], default=json_serializer)
+                }
         
         elif method == 'POST':
             body = json.loads(event.get('body', '{}'))
@@ -311,9 +320,93 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'body': json.dumps(dict(result), default=json_serializer)
                 }
+            
+            elif action == 'create_attribute':
+                name = body.get('name')
+                field_type = body.get('field_type')
+                is_required = body.get('is_required', False)
+                default_value = body.get('default_value', '')
+                options = body.get('options', '')
+                sort_order = body.get('sort_order', 0)
+                
+                cur.execute(
+                    "INSERT INTO attribute_templates (name, field_type, is_required, default_value, options, sort_order) "
+                    "VALUES ('" + name.replace("'", "''") + "', "
+                    "'" + field_type.replace("'", "''") + "', "
+                    + str(is_required) + ", "
+                    "'" + default_value.replace("'", "''") + "', "
+                    "'" + options.replace("'", "''") + "', "
+                    + str(sort_order) + ") RETURNING *"
+                )
+                result = cur.fetchone()
+                conn.commit()
+                
+                return {
+                    'statusCode': 201,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps(dict(result), default=json_serializer)
+                }
+            
+            elif action == 'update_attribute':
+                attr_id = body.get('id')
+                name = body.get('name')
+                field_type = body.get('field_type')
+                is_required = body.get('is_required', False)
+                default_value = body.get('default_value', '')
+                options = body.get('options', '')
+                
+                cur.execute(
+                    "UPDATE attribute_templates SET "
+                    "name = '" + name.replace("'", "''") + "', "
+                    "field_type = '" + field_type.replace("'", "''") + "', "
+                    "is_required = " + str(is_required) + ", "
+                    "default_value = '" + default_value.replace("'", "''") + "', "
+                    "options = '" + options.replace("'", "''") + "', "
+                    "updated_at = CURRENT_TIMESTAMP "
+                    "WHERE id = " + str(attr_id) + " RETURNING *"
+                )
+                result = cur.fetchone()
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps(dict(result), default=json_serializer)
+                }
+            
+            elif action == 'reorder_attributes':
+                attributes = body.get('attributes', [])
+                
+                for attr in attributes:
+                    attr_id = attr.get('id')
+                    sort_order = attr.get('sort_order')
+                    cur.execute(
+                        "UPDATE attribute_templates SET sort_order = " + str(sort_order) + 
+                        " WHERE id = " + str(attr_id)
+                    )
+                
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True})
+                }
         
         elif method == 'DELETE':
             permission_id = event.get('queryStringParameters', {}).get('permission_id')
+            attribute_id = event.get('queryStringParameters', {}).get('attribute_id')
+            
+            if attribute_id:
+                cur.execute("DELETE FROM attribute_templates WHERE id = " + str(attribute_id))
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'message': 'Attribute deleted'})
+                }
+            
             if not permission_id:
                 return {
                     'statusCode': 400,

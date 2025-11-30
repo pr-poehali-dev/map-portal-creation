@@ -9,6 +9,7 @@ import AdminUsersTab from '@/components/AdminUsersTab';
 import AdminCompaniesTab from '@/components/AdminCompaniesTab';
 import AdminPermissionsTab from '@/components/AdminPermissionsTab';
 import AdminAuditTab from '@/components/AdminAuditTab';
+import AdminAttributesTab from '@/components/AdminAttributesTab';
 
 const ADMIN_API = 'https://functions.poehali.dev/3e92b954-4498-4bea-8de7-898ccb110b58';
 
@@ -60,6 +61,16 @@ interface AuditLog {
   name: string;
 }
 
+interface AttributeTemplate {
+  id: number;
+  name: string;
+  field_type: string;
+  is_required: boolean;
+  default_value?: string;
+  options?: string;
+  sort_order: number;
+}
+
 export default function Admin() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -70,6 +81,7 @@ export default function Admin() {
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [layers, setLayers] = useState<any[]>([]);
+  const [attributes, setAttributes] = useState<AttributeTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [companyDialog, setCompanyDialog] = useState(false);
@@ -105,12 +117,13 @@ export default function Admin() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [usersRes, companiesRes, permsRes, auditRes, layersRes] = await Promise.all([
+      const [usersRes, companiesRes, permsRes, auditRes, layersRes, attributesRes] = await Promise.all([
         fetch(`${ADMIN_API}?action=users`, { headers: getAuthHeaders() }),
         fetch(`${ADMIN_API}?action=companies`, { headers: getAuthHeaders() }),
         fetch(`${ADMIN_API}?action=permissions`, { headers: getAuthHeaders() }),
         fetch(`${ADMIN_API}?action=audit&limit=50`, { headers: getAuthHeaders() }),
-        fetch(`${ADMIN_API}?action=layers`, { headers: getAuthHeaders() })
+        fetch(`${ADMIN_API}?action=layers`, { headers: getAuthHeaders() }),
+        fetch(`${ADMIN_API}?action=attributes`, { headers: getAuthHeaders() })
       ]);
 
       if (!usersRes.ok) {
@@ -126,12 +139,13 @@ export default function Admin() {
         throw new Error('Failed to load data');
       }
 
-      const [usersData, companiesData, permsData, auditData, layersData] = await Promise.all([
+      const [usersData, companiesData, permsData, auditData, layersData, attributesData] = await Promise.all([
         usersRes.json(),
         companiesRes.json(),
         permsRes.json(),
         auditRes.json(),
-        layersRes.json()
+        layersRes.json(),
+        attributesRes.json()
       ]);
 
       setUsers(usersData);
@@ -139,6 +153,7 @@ export default function Admin() {
       setPermissions(permsData);
       setAuditLogs(auditData);
       setLayers(layersData);
+      setAttributes(attributesData);
     } catch (error) {
       toast({
         title: 'Ошибка загрузки',
@@ -344,6 +359,76 @@ export default function Admin() {
     }
   };
 
+  const createAttribute = async (data: Omit<AttributeTemplate, 'id'>) => {
+    try {
+      const response = await fetch(ADMIN_API, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ action: 'create_attribute', ...data })
+      });
+
+      if (!response.ok) throw new Error('Failed to create attribute');
+
+      toast({ title: 'Атрибут создан', description: 'Новый атрибут успешно добавлен' });
+      loadData();
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось создать атрибут', variant: 'destructive' });
+    }
+  };
+
+  const updateAttribute = async (id: number, data: Partial<AttributeTemplate>) => {
+    try {
+      const response = await fetch(ADMIN_API, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ action: 'update_attribute', id, ...data })
+      });
+
+      if (!response.ok) throw new Error('Failed to update attribute');
+
+      toast({ title: 'Атрибут обновлён', description: 'Атрибут успешно изменён' });
+      loadData();
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось обновить атрибут', variant: 'destructive' });
+    }
+  };
+
+  const deleteAttribute = async (id: number) => {
+    try {
+      const response = await fetch(`${ADMIN_API}?attribute_id=${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to delete attribute');
+
+      toast({ title: 'Атрибут удалён', description: 'Атрибут успешно удалён' });
+      loadData();
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось удалить атрибут', variant: 'destructive' });
+    }
+  };
+
+  const reorderAttributes = async (reorderedAttributes: AttributeTemplate[]) => {
+    try {
+      const response = await fetch(ADMIN_API, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ 
+          action: 'reorder_attributes', 
+          attributes: reorderedAttributes.map(a => ({ id: a.id, sort_order: a.sort_order }))
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to reorder attributes');
+
+      setAttributes(reorderedAttributes);
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось изменить порядок', variant: 'destructive' });
+      loadData();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-8 dark">
       <div className="max-w-7xl mx-auto">
@@ -364,7 +449,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="users">
               <Icon name="Users" size={16} className="mr-2" />
               Пользователи
@@ -380,6 +465,10 @@ export default function Admin() {
             <TabsTrigger value="audit">
               <Icon name="FileText" size={16} className="mr-2" />
               Аудит
+            </TabsTrigger>
+            <TabsTrigger value="attributes">
+              <Icon name="Settings" size={16} className="mr-2" />
+              Атрибуты
             </TabsTrigger>
           </TabsList>
 
@@ -429,6 +518,16 @@ export default function Admin() {
             <AdminAuditTab
               auditLogs={auditLogs}
               isLoading={isLoading}
+            />
+          </TabsContent>
+
+          <TabsContent value="attributes">
+            <AdminAttributesTab
+              attributes={attributes}
+              onCreateAttribute={createAttribute}
+              onUpdateAttribute={updateAttribute}
+              onDeleteAttribute={deleteAttribute}
+              onReorderAttributes={reorderAttributes}
             />
           </TabsContent>
         </Tabs>
