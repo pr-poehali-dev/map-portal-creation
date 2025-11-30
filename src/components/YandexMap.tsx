@@ -208,12 +208,37 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
     if (showCadastralLayer) {
       if (!cadastralLayerRef.current) {
         try {
-          const layer = new window.ymaps.Layer(
-            'https://pkk.rosreestr.ru/arcgis/rest/services/PKK6/CadastreObjects/MapServer/tile/%z/%y/%x',
-            {
-              tileTransparent: true
-            }
-          );
+          // WMS слой кадастровых границ из НСПД
+          const getTileUrl = (tileNumber: number[], tileZoom: number) => {
+            const [x, y] = tileNumber;
+            const z = tileZoom;
+            
+            // Конвертируем tile в bbox для WMS
+            const n = Math.PI - (2 * Math.PI * y) / Math.pow(2, z);
+            const lat1 = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+            const lon1 = (x / Math.pow(2, z)) * 360 - 180;
+            const lat2 = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(Math.PI - (2 * Math.PI * (y + 1)) / Math.pow(2, z)) - Math.exp(-(Math.PI - (2 * Math.PI * (y + 1)) / Math.pow(2, z)))));
+            const lon2 = ((x + 1) / Math.pow(2, z)) * 360 - 180;
+            
+            // Преобразуем в Web Mercator (EPSG:3857)
+            const toWebMercator = (lon: number, lat: number) => {
+              const x = lon * 20037508.34 / 180;
+              let y = Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180);
+              y = y * 20037508.34 / 180;
+              return [x, y];
+            };
+            
+            const [minX, minY] = toWebMercator(lon1, lat2);
+            const [maxX, maxY] = toWebMercator(lon2, lat1);
+            const bbox = `${minX},${minY},${maxX},${maxY}`;
+            
+            return `https://nspd.gov.ru/api/aeggis/v3/36048/wms?REQUEST=GetMap&SERVICE=WMS&VERSION=1.3.0&FORMAT=image/png&STYLES=&TRANSPARENT=true&LAYERS=36048&WIDTH=256&HEIGHT=256&CRS=EPSG:3857&BBOX=${bbox}`;
+          };
+          
+          const layer = new window.ymaps.Layer(getTileUrl, {
+            tileTransparent: true,
+            projection: window.ymaps.projection.wgs84Mercator
+          });
           
           mapInstanceRef.current.layers.add(layer);
           cadastralLayerRef.current = layer;
