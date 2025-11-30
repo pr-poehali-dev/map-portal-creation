@@ -1,433 +1,66 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
-import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import AdminUsersTab from '@/components/AdminUsersTab';
 import AdminCompaniesTab from '@/components/AdminCompaniesTab';
 import AdminPermissionsTab from '@/components/AdminPermissionsTab';
 import AdminAuditTab from '@/components/AdminAuditTab';
 import AdminAttributesTab from '@/components/AdminAttributesTab';
-
-const ADMIN_API = 'https://functions.poehali.dev/3e92b954-4498-4bea-8de7-898ccb110b58';
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  status: string;
-  phone?: string;
-  position?: string;
-  company_id?: string;
-  company_name?: string;
-  created_at: string;
-}
-
-interface Company {
-  id: string;
-  name: string;
-  description: string;
-  inn: string;
-  address: string;
-  phone: string;
-  email: string;
-  website: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface Permission {
-  id: number;
-  user_id: string;
-  resource_type: string;
-  resource_id: string;
-  permission_level: string;
-  created_at: string;
-}
-
-interface AuditLog {
-  id: number;
-  user_id: string;
-  action: string;
-  resource_type: string;
-  resource_id: string;
-  details: string;
-  created_at: string;
-  email: string;
-  name: string;
-}
-
-interface AttributeTemplate {
-  id: number;
-  name: string;
-  field_type: string;
-  is_required: boolean;
-  default_value?: string;
-  options?: string;
-  sort_order: number;
-}
+import { useAdminData } from '@/hooks/useAdminData';
+import { useUserManagement } from '@/hooks/useUserManagement';
+import { useCompanyManagement } from '@/hooks/useCompanyManagement';
+import { usePermissionManagement } from '@/hooks/usePermissionManagement';
+import { useAttributeManagement } from '@/hooks/useAttributeManagement';
 
 export default function Admin() {
-  const { user } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
   
-  const [users, setUsers] = useState<User[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [layers, setLayers] = useState<any[]>([]);
-  const [attributes, setAttributes] = useState<AttributeTemplate[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  const [companyDialog, setCompanyDialog] = useState(false);
-  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
-  const [newCompany, setNewCompany] = useState({
-    id: '',
-    name: '',
-    description: '',
-    inn: '',
-    address: '',
-    phone: '',
-    email: '',
-    website: ''
-  });
-  
-  const [permissionDialog, setPermissionDialog] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState('');
-  const [newPermission, setNewPermission] = useState({
-    resource_type: 'layer',
-    resource_id: '',
-    permission_level: 'read'
-  });
+  const {
+    users,
+    companies,
+    permissions,
+    auditLogs,
+    layers,
+    attributes,
+    isLoading,
+    loadData,
+    getAuthHeaders,
+    setAttributes,
+    ADMIN_API
+  } = useAdminData();
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const { updateRole, updateStatus } = useUserManagement(ADMIN_API, getAuthHeaders, loadData);
 
-  const getAuthHeaders = () => ({
-    'Content-Type': 'application/json',
-    'X-User-Id': user?.token || ''
-  });
+  const {
+    companyDialog,
+    setCompanyDialog,
+    editingCompany,
+    setEditingCompany,
+    newCompany,
+    setNewCompany,
+    createCompany,
+    updateCompany,
+    deleteCompany
+  } = useCompanyManagement(ADMIN_API, getAuthHeaders, loadData);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      const [usersRes, companiesRes, permsRes, auditRes, layersRes, attributesRes] = await Promise.all([
-        fetch(`${ADMIN_API}?action=users`, { headers: getAuthHeaders() }),
-        fetch(`${ADMIN_API}?action=companies`, { headers: getAuthHeaders() }),
-        fetch(`${ADMIN_API}?action=permissions`, { headers: getAuthHeaders() }),
-        fetch(`${ADMIN_API}?action=audit&limit=50`, { headers: getAuthHeaders() }),
-        fetch(`${ADMIN_API}?action=layers`, { headers: getAuthHeaders() }),
-        fetch(`${ADMIN_API}?action=attributes`, { headers: getAuthHeaders() })
-      ]);
+  const {
+    permissionDialog,
+    setPermissionDialog,
+    selectedUserId,
+    setSelectedUserId,
+    newPermission,
+    setNewPermission,
+    grantPermission,
+    revokePermission
+  } = usePermissionManagement(ADMIN_API, getAuthHeaders, loadData);
 
-      if (!usersRes.ok) {
-        if (usersRes.status === 403) {
-          toast({
-            title: 'Доступ запрещён',
-            description: 'У вас нет прав администратора',
-            variant: 'destructive'
-          });
-          navigate('/');
-          return;
-        }
-        throw new Error('Failed to load data');
-      }
-
-      const [usersData, companiesData, permsData, auditData, layersData, attributesData] = await Promise.all([
-        usersRes.json(),
-        companiesRes.json(),
-        permsRes.json(),
-        auditRes.json(),
-        layersRes.json(),
-        attributesRes.json()
-      ]);
-
-      setUsers(usersData);
-      setCompanies(companiesData);
-      setPermissions(permsData);
-      setAuditLogs(auditData);
-      setLayers(layersData);
-      setAttributes(attributesData);
-    } catch (error) {
-      toast({
-        title: 'Ошибка загрузки',
-        description: 'Не удалось загрузить данные',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const updateRole = async (userId: string, newRole: string) => {
-    try {
-      const response = await fetch(ADMIN_API, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ action: 'update_role', user_id: userId, role: newRole })
-      });
-
-      if (!response.ok) throw new Error('Failed to update role');
-
-      toast({
-        title: 'Роль обновлена',
-        description: 'Роль пользователя успешно изменена'
-      });
-      
-      loadData();
-    } catch (error) {
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось обновить роль',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const updateStatus = async (userId: string, newStatus: string) => {
-    try {
-      const response = await fetch(ADMIN_API, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ action: 'update_status', user_id: userId, status: newStatus })
-      });
-
-      if (!response.ok) throw new Error('Failed to update status');
-
-      toast({
-        title: 'Статус обновлён',
-        description: 'Статус пользователя успешно изменён'
-      });
-      
-      loadData();
-    } catch (error) {
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось обновить статус',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const grantPermission = async () => {
-    try {
-      const response = await fetch(ADMIN_API, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          action: 'grant_permission',
-          user_id: selectedUserId,
-          ...newPermission
-        })
-      });
-
-      if (!response.ok) throw new Error('Failed to grant permission');
-
-      toast({
-        title: 'Доступ предоставлен',
-        description: 'Права доступа успешно назначены'
-      });
-      
-      setPermissionDialog(false);
-      setNewPermission({ resource_type: 'layer', resource_id: '', permission_level: 'read' });
-      setSelectedUserId('');
-      loadData();
-    } catch (error) {
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось предоставить доступ',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const revokePermission = async (permissionId: number) => {
-    try {
-      const response = await fetch(`${ADMIN_API}?permission_id=${permissionId}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      });
-
-      if (!response.ok) throw new Error('Failed to revoke permission');
-
-      toast({
-        title: 'Доступ отозван',
-        description: 'Права доступа успешно удалены'
-      });
-      
-      loadData();
-    } catch (error) {
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось отозвать доступ',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const createCompany = async () => {
-    try {
-      const companyId = Date.now().toString();
-      const response = await fetch(ADMIN_API, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          action: 'create_company',
-          id: companyId,
-          ...newCompany
-        })
-      });
-
-      if (!response.ok) throw new Error('Failed to create company');
-
-      toast({
-        title: 'Компания создана',
-        description: 'Новая компания успешно добавлена'
-      });
-      
-      setCompanyDialog(false);
-      setNewCompany({ id: '', name: '', description: '', inn: '', address: '', phone: '', email: '', website: '' });
-      loadData();
-    } catch (error) {
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось создать компанию',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const updateCompany = async () => {
-    try {
-      const response = await fetch(ADMIN_API, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          action: 'update_company',
-          id: editingCompany?.id,
-          ...newCompany
-        })
-      });
-
-      if (!response.ok) throw new Error('Failed to update company');
-
-      toast({
-        title: 'Компания обновлена',
-        description: 'Данные компании успешно изменены'
-      });
-      
-      setCompanyDialog(false);
-      setEditingCompany(null);
-      setNewCompany({ id: '', name: '', description: '', inn: '', address: '', phone: '', email: '', website: '' });
-      loadData();
-    } catch (error) {
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось обновить компанию',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const deleteCompany = async (companyId: string) => {
-    try {
-      const response = await fetch(`${ADMIN_API}?company_id=${companyId}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      });
-
-      if (!response.ok) throw new Error('Failed to delete company');
-
-      toast({
-        title: 'Компания удалена',
-        description: 'Компания успешно удалена из системы'
-      });
-      
-      loadData();
-    } catch (error) {
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось удалить компанию',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const createAttribute = async (data: Omit<AttributeTemplate, 'id'>) => {
-    try {
-      const response = await fetch(ADMIN_API, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ action: 'create_attribute', ...data })
-      });
-
-      if (!response.ok) throw new Error('Failed to create attribute');
-
-      toast({ title: 'Атрибут создан', description: 'Новый атрибут успешно добавлен' });
-      loadData();
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось создать атрибут', variant: 'destructive' });
-    }
-  };
-
-  const updateAttribute = async (id: number, data: Partial<AttributeTemplate>) => {
-    try {
-      const response = await fetch(ADMIN_API, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ action: 'update_attribute', id, ...data })
-      });
-
-      if (!response.ok) throw new Error('Failed to update attribute');
-
-      toast({ title: 'Атрибут обновлён', description: 'Атрибут успешно изменён' });
-      loadData();
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось обновить атрибут', variant: 'destructive' });
-    }
-  };
-
-  const deleteAttribute = async (id: number) => {
-    try {
-      const response = await fetch(`${ADMIN_API}?attribute_id=${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      });
-
-      if (!response.ok) throw new Error('Failed to delete attribute');
-
-      toast({ title: 'Атрибут удалён', description: 'Атрибут успешно удалён' });
-      loadData();
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось удалить атрибут', variant: 'destructive' });
-    }
-  };
-
-  const reorderAttributes = async (reorderedAttributes: AttributeTemplate[]) => {
-    try {
-      const response = await fetch(ADMIN_API, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ 
-          action: 'reorder_attributes', 
-          attributes: reorderedAttributes.map(a => ({ id: a.id, sort_order: a.sort_order }))
-        })
-      });
-
-      if (!response.ok) throw new Error('Failed to reorder attributes');
-
-      setAttributes(reorderedAttributes);
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось изменить порядок', variant: 'destructive' });
-      loadData();
-    }
-  };
+  const {
+    createAttribute,
+    updateAttribute,
+    deleteAttribute,
+    reorderAttributes
+  } = useAttributeManagement(ADMIN_API, getAuthHeaders, loadData, setAttributes);
 
   return (
     <div className="min-h-screen bg-background p-8 dark">
