@@ -13,7 +13,7 @@ const sampleData: PolygonObject[] = [
     status: 'Активный',
     coordinates: [[50, 30], [60, 30], [60, 40], [50, 40]],
     color: '#0EA5E9',
-    layer: 'Административное деление',
+    segment: 'Административное деление',
     visible: true,
     attributes: { код: 'ЦР-001', приоритет: 'Высокий' }
   },
@@ -26,7 +26,7 @@ const sampleData: PolygonObject[] = [
     status: 'Развитие',
     coordinates: [[40, 50], [60, 50], [60, 70], [40, 70]],
     color: '#8B5CF6',
-    layer: 'Промышленность',
+    segment: 'Промышленность',
     visible: true,
     attributes: { код: 'ПЗ-001', категория: 'Производство' }
   },
@@ -38,7 +38,7 @@ const sampleData: PolygonObject[] = [
     status: 'Охраняемая',
     coordinates: [[70, 30], [90, 30], [90, 50], [70, 50]],
     color: '#10B981',
-    layer: 'Природные зоны',
+    segment: 'Природные зоны',
     visible: true,
     attributes: { код: 'ПК-001', охрана: 'Заповедная' }
   },
@@ -51,7 +51,7 @@ const sampleData: PolygonObject[] = [
     status: 'Эксплуатация',
     coordinates: [[30, 70], [50, 70], [50, 90], [30, 90]],
     color: '#F97316',
-    layer: 'Жилые зоны',
+    segment: 'Жилые зоны',
     visible: true,
     attributes: { код: 'ЖМ-001', этажность: '12-24' }
   },
@@ -63,13 +63,13 @@ const sampleData: PolygonObject[] = [
     status: 'Активный',
     coordinates: [[65, 55], [80, 55], [80, 65], [65, 65]],
     color: '#EAB308',
-    layer: 'Коммерция',
+    segment: 'Коммерция',
     visible: true,
     attributes: { код: 'ТК-001', объектов: 145 }
   }
 ];
 
-export const layers = [
+export const segments = [
   { name: 'Административное деление', visible: true, color: '#0EA5E9' },
   { name: 'Промышленность', visible: true, color: '#8B5CF6' },
   { name: 'Природные зоны', visible: true, color: '#10B981' },
@@ -92,7 +92,7 @@ export function useMapData(userRole?: string) {
         console.log('🔍 First polygon details:', {
           id: data[0].id,
           name: data[0].name,
-          layer: data[0].layer,
+          segment: data[0].segment,
           visible: data[0].visible,
           coordinates_length: Array.isArray(data[0].coordinates) ? data[0].coordinates.length : 'not array'
         });

@@ -10,7 +10,7 @@ interface UseMapHandlersProps {
   setTrashData: (data: PolygonObject[]) => void;
   loadPolygons: () => Promise<void>;
   loadTrash: () => Promise<void>;
-  setLayerVisibility: (visibility: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => void;
+  setSegmentVisibility: (visibility: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => void;
   setSelectedObject: (obj: PolygonObject | null) => void;
   setIsEditing: (editing: boolean) => void;
   setConfirmPermanentDelete: (id: string | null) => void;
@@ -25,7 +25,7 @@ export function useMapHandlers({
   setTrashData,
   loadPolygons,
   loadTrash,
-  setLayerVisibility,
+  setSegmentVisibility,
   setSelectedObject,
   setIsEditing,
   setConfirmPermanentDelete,
@@ -121,12 +121,12 @@ export function useMapHandlers({
       
       setPolygonData(prev => [...prev, ...savedPolygons]);
       
-      const newLayers = Array.from(new Set(importedPolygons.map(p => p.layer)));
-      setLayerVisibility(prev => {
+      const newSegments = Array.from(new Set(importedPolygons.map(p => p.segment)));
+      setSegmentVisibility(prev => {
         const updated = { ...prev };
-        newLayers.forEach(layer => {
-          if (!(layer in updated)) {
-            updated[layer] = true;
+        newSegments.forEach(segment => {
+          if (!(segment in updated)) {
+            updated[segment] = true;
           }
         });
         return updated;

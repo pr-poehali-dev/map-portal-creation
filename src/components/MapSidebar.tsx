@@ -25,9 +25,9 @@ interface MapSidebarProps {
   filteredData: PolygonObject[];
   selectedObject: PolygonObject | null;
   setSelectedObject: (obj: PolygonObject | null) => void;
-  layers: Array<{ name: string; visible: boolean; color: string }>;
-  layerVisibility: Record<string, boolean>;
-  setLayerVisibility: (visibility: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => void;
+  segments: Array<{ name: string; visible: boolean; color: string }>;
+  segmentVisibility: Record<string, boolean>;
+  setSegmentVisibility: (visibility: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => void;
   mapOpacity: number[];
   setMapOpacity: (opacity: number[]) => void;
   polygonData: PolygonObject[];
@@ -54,9 +54,9 @@ export default function MapSidebar({
   filteredData,
   selectedObject,
   setSelectedObject,
-  layers,
-  layerVisibility,
-  setLayerVisibility,
+  segments,
+  segmentVisibility,
+  setSegmentVisibility,
   mapOpacity,
   setMapOpacity,
   polygonData,
@@ -151,6 +151,10 @@ export default function MapSidebar({
             <Icon name="Layers" size={16} className="mr-2" />
             Объекты
           </TabsTrigger>
+          <TabsTrigger value="segments" className="flex-1">
+            <Icon name="Layers" size={16} className="mr-2" />
+            Сегменты
+          </TabsTrigger>
           <TabsTrigger value="layers" className="flex-1">
             <Icon name="Eye" size={16} className="mr-2" />
             Слои
@@ -238,7 +242,7 @@ export default function MapSidebar({
           </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="layers" className="flex-1 flex flex-col mt-0 min-h-0 data-[state=inactive]:hidden">
+        <TabsContent value="segments" className="flex-1 flex flex-col mt-0 min-h-0 data-[state=inactive]:hidden">
           <ScrollArea className="flex-1">
             <div className="p-4 space-y-4">
               {user?.role === 'admin' && (
@@ -269,7 +273,7 @@ export default function MapSidebar({
               )}
 
               <div className="space-y-1 mb-6">
-                <Label className="text-xs text-sidebar-foreground/60">Прозрачность слоёв</Label>
+                <Label className="text-xs text-sidebar-foreground/60">Прозрачность объектов</Label>
                 <div className="flex items-center gap-3">
                   <Slider
                     value={mapOpacity}
@@ -282,31 +286,43 @@ export default function MapSidebar({
                 </div>
               </div>
 
-              {layers.map(layer => (
-                <Card key={layer.name} className="p-4">
+              {segments.map(segment => (
+                <Card key={segment.name} className="p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <div
                         className="w-4 h-4 rounded"
-                        style={{ backgroundColor: layer.color }}
+                        style={{ backgroundColor: segment.color }}
                       />
-                      <span className="font-medium text-sm text-card-foreground">{layer.name}</span>
+                      <span className="font-medium text-sm text-card-foreground">{segment.name}</span>
                     </div>
                     <Switch
-                      checked={layerVisibility[layer.name]}
+                      checked={segmentVisibility[segment.name]}
                       onCheckedChange={(checked) =>
-                        setLayerVisibility(prev => ({ ...prev, [layer.name]: checked }))
+                        setSegmentVisibility(prev => ({ ...prev, [segment.name]: checked }))
                       }
                     />
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Icon name="Database" size={12} />
                     <span>
-                      {polygonData.filter(item => item.layer === layer.name).length} объектов
+                      {polygonData.filter(item => item.segment === segment.name).length} объектов
                     </span>
                   </div>
                 </Card>
               ))}
+            </div>
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="layers" className="flex-1 flex flex-col mt-0 min-h-0 data-[state=inactive]:hidden">
+          <ScrollArea className="flex-1">
+            <div className="p-4 space-y-4">
+              <div className="text-center py-8 text-muted-foreground">
+                <Icon name="Layers" size={48} className="mx-auto mb-3 opacity-20" />
+                <p className="text-sm mb-2">Технические слои карты</p>
+                <p className="text-xs">Кадастровая карта, Викимапия, спутник и другие источники</p>
+              </div>
             </div>
           </ScrollArea>
         </TabsContent>

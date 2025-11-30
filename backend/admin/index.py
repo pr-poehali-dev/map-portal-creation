@@ -107,14 +107,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     ''', (limit,))
                     result = cur.fetchall()
                 
-                elif action == 'layers':
+                elif action == 'segments':
                     cur.execute('''
-                        SELECT DISTINCT jsonb_array_elements(attributes->'layers') as layer
+                        SELECT DISTINCT segment
                         FROM t_p43707323_map_portal_creation.polygon_objects
-                        WHERE attributes ? 'layers'
+                        WHERE segment IS NOT NULL
+                        ORDER BY segment
                     ''')
-                    layers_raw = cur.fetchall()
-                    result = [{'id': str(i), 'name': row['layer']} for i, row in enumerate(layers_raw)]
+                    segments_raw = cur.fetchall()
+                    result = [{'id': str(i), 'name': row['segment']} for i, row in enumerate(segments_raw)]
                 
                 elif action == 'attributes':
                     cur.execute('''

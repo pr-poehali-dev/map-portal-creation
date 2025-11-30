@@ -7,7 +7,17 @@ export interface PolygonObject {
   status: string;
   coordinates: [number, number][];
   color: string;
-  layer: string;
+  segment: string;
   visible: boolean;
   attributes: Record<string, any>;
+}
+
+export interface MapLayer {
+  id: string;
+  name: string;
+  type: 'cadastre' | 'wikimapia' | 'satellite' | 'terrain' | 'hybrid' | 'custom';
+  enabled: boolean;
+  opacity: number;
+  url?: string;
+  zIndex?: number;
 }

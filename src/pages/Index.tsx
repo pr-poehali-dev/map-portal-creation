@@ -9,7 +9,7 @@ import MapDialogs from '@/components/MapDialogs';
 import AIFeaturesTour from '@/components/AIFeaturesTour';
 import { PolygonObject } from '@/types/polygon';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMapData, layers } from '@/hooks/useMapData';
+import { useMapData, segments } from '@/hooks/useMapData';
 import { useMapHandlers } from '@/hooks/useMapHandlers';
 
 export default function Index() {
@@ -28,21 +28,21 @@ export default function Index() {
   const [selectedObject, setSelectedObject] = useState<PolygonObject | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('Все');
-  const [layerVisibility, setLayerVisibility] = useState<Record<string, boolean>>(
-    layers.reduce((acc, layer) => ({ ...acc, [layer.name]: true }), {})
+  const [segmentVisibility, setSegmentVisibility] = useState<Record<string, boolean>>(
+    segments.reduce((acc, segment) => ({ ...acc, [segment.name]: true }), {})
   );
 
   useEffect(() => {
     if (polygonData.length > 0) {
-      const allLayers = Array.from(new Set(polygonData.map(p => p.layer)));
-      console.log('🔍 Detected layers from polygons:', allLayers);
+      const allSegments = Array.from(new Set(polygonData.map(p => p.segment)));
+      console.log('🔍 Detected segments from polygons:', allSegments);
       
-      setLayerVisibility(prev => {
+      setSegmentVisibility(prev => {
         const updated = { ...prev };
-        allLayers.forEach(layer => {
-          if (!(layer in updated)) {
-            console.log('➕ Adding new layer to visibility:', layer);
-            updated[layer] = true;
+        allSegments.forEach(segment => {
+          if (!(segment in updated)) {
+            console.log('➕ Adding new segment to visibility:', segment);
+            updated[segment] = true;
           }
         });
         return updated;
@@ -80,7 +80,7 @@ export default function Index() {
     setTrashData,
     loadPolygons,
     loadTrash,
-    setLayerVisibility,
+    setSegmentVisibility,
     setSelectedObject,
     setIsEditing,
     setConfirmPermanentDelete,
@@ -93,8 +93,8 @@ export default function Index() {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           item.type.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterType === 'Все' || item.type === filterType;
-    const matchesLayer = layerVisibility[item.layer];
-    return matchesSearch && matchesFilter && matchesLayer;
+    const matchesSegment = segmentVisibility[item.segment];
+    return matchesSearch && matchesFilter && matchesSegment;
   });
 
   const types = ['Все', ...Array.from(new Set(polygonData.map(item => item.type)))];
@@ -112,9 +112,9 @@ export default function Index() {
         filteredData={filteredData}
         selectedObject={selectedObject}
         setSelectedObject={setSelectedObject}
-        layers={layers}
-        layerVisibility={layerVisibility}
-        setLayerVisibility={setLayerVisibility}
+        segments={segments}
+        segmentVisibility={segmentVisibility}
+        setSegmentVisibility={setSegmentVisibility}
         mapOpacity={mapOpacity}
         setMapOpacity={setMapOpacity}
         polygonData={polygonData}
