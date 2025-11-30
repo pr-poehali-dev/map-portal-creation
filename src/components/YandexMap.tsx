@@ -217,13 +217,15 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
 
     if (showCadastralLayer) {
       try {
-        // Кадастровый слой через ArcGIS tile server Росреестра
+        // Кадастровый слой через tile server Росреестра
         const getTileUrl = (tileNumber: number[], tileZoom: number) => {
           const [x, y] = tileNumber;
           const z = tileZoom;
           
-          // Используем публичный ArcGIS сервер Росреестра
-          return `https://pkk.rosreestr.ru/arcgis/rest/services/PKK6/CadastreObjects/MapServer/tile/${z}/${y}/${x}`;
+          const url = `https://pkk.rosreestr.ru/arcgis/rest/services/PKK6/CadastreObjects/MapServer/tile/${z}/${y}/${x}`;
+          console.log(`📍 Loading tile: z=${z}, x=${x}, y=${y}`);
+          
+          return url;
         };
         
         const layer = new window.ymaps.Layer(getTileUrl, {
