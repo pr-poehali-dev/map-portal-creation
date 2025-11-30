@@ -215,7 +215,7 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
             
             // Web Mercator тайлы для EPSG:3857
             const tileSize = 256;
-            const earthRadius = 6378137; // sradiusa из params
+            const earthRadius = 6378137;
             const initialResolution = 2 * Math.PI * earthRadius / tileSize;
             const originShift = 2 * Math.PI * earthRadius / 2.0;
             
@@ -226,7 +226,7 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
             const maxX = (x + 1) * tileSize * resolution - originShift;
             const minY = originShift - (y + 1) * tileSize * resolution;
             
-            // RoundEx с 10 знаками после запятой (как в SAS.Planet)
+            // RoundEx с 10 знаками после запятой
             const round10 = (num: number) => Math.round(num * 1e10) / 1e10;
             
             const bbox = `${round10(minX)},${round10(minY)},${round10(maxX)},${round10(maxY)}`;
@@ -236,13 +236,15 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
             
             const directUrl = `${baseUrl}${bbox}`;
             
-            // Используем CORS proxy
-            return `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`;
+            console.log('🗺️ Cadastral tile URL:', directUrl);
+            
+            // Пробуем напрямую (может работать из браузера)
+            return directUrl;
           };
           
           const layer = new window.ymaps.Layer(getTileUrl, {
             tileTransparent: true,
-            projection: window.ymaps.projection.wgs84Mercator
+            projection: window.ymaps.projection.sphericalMercator
           });
           
           mapInstanceRef.current.layers.add(layer);
