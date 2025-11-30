@@ -172,8 +172,7 @@ export default function MapSidebar({
                       style={{ backgroundColor: item.color }}
                     />
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-sm text-card-foreground mb-1">{item.name}</h3>
-                      <p className="text-xs text-muted-foreground mb-2">{item.type}</p>
+                      <h3 className="font-medium text-xs text-card-foreground mb-2">{item.name}</h3>
                       <div className="flex items-center gap-3 text-xs">
                         <span className="flex items-center gap-1 text-muted-foreground">
                           <Icon name="Maximize2" size={12} />
