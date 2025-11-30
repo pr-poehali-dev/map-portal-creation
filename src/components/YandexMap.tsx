@@ -205,38 +205,37 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
   useEffect(() => {
     if (!mapInstanceRef.current || !window.ymaps) return;
 
-    if (showCadastralLayer) {
-      if (!cadastralLayerRef.current) {
-        try {
-          // Кадастровый слой через ArcGIS tile server Росреестра
-          const getTileUrl = (tileNumber: number[], tileZoom: number) => {
-            const [x, y] = tileNumber;
-            const z = tileZoom;
-            
-            // Используем публичный ArcGIS сервер Росреестра
-            // Этот URL работает напрямую из браузера без CORS
-            return `https://pkk.rosreestr.ru/arcgis/rest/services/PKK6/CadastreObjects/MapServer/tile/${z}/${y}/${x}`;
-          };
-          
-          const layer = new window.ymaps.Layer(getTileUrl, {
-            tileTransparent: true,
-            projection: window.ymaps.projection.sphericalMercator
-          });
-          
-          mapInstanceRef.current.layers.add(layer);
-          cadastralLayerRef.current = layer;
-        } catch (error) {
-          console.error('Failed to add cadastral layer:', error);
-        }
+    // Очистка предыдущего слоя
+    if (cadastralLayerRef.current) {
+      try {
+        mapInstanceRef.current.layers.remove(cadastralLayerRef.current);
+      } catch (error) {
+        console.error('Failed to remove previous cadastral layer:', error);
       }
-    } else {
-      if (cadastralLayerRef.current) {
-        try {
-          mapInstanceRef.current.layers.remove(cadastralLayerRef.current);
-        } catch (error) {
-          console.error('Failed to remove cadastral layer:', error);
-        }
-        cadastralLayerRef.current = null;
+      cadastralLayerRef.current = null;
+    }
+
+    if (showCadastralLayer) {
+      try {
+        // Кадастровый слой через ArcGIS tile server Росреестра
+        const getTileUrl = (tileNumber: number[], tileZoom: number) => {
+          const [x, y] = tileNumber;
+          const z = tileZoom;
+          
+          // Используем публичный ArcGIS сервер Росреестра
+          return `https://pkk.rosreestr.ru/arcgis/rest/services/PKK6/CadastreObjects/MapServer/tile/${z}/${y}/${x}`;
+        };
+        
+        const layer = new window.ymaps.Layer(getTileUrl, {
+          tileTransparent: true,
+          projection: window.ymaps.projection.sphericalMercator
+        });
+        
+        mapInstanceRef.current.layers.add(layer);
+        cadastralLayerRef.current = layer;
+        console.log('✅ Cadastral layer added successfully');
+      } catch (error) {
+        console.error('❌ Failed to add cadastral layer:', error);
       }
     }
   }, [showCadastralLayer]);
