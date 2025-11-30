@@ -207,25 +207,27 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
 
     if (showCadastralLayer) {
       if (!cadastralLayerRef.current) {
-        const NspdWmsLayer = function () {
-          return new window.ymaps.Layer(
+        try {
+          const layer = new window.ymaps.Layer(
             'https://pkk.rosreestr.ru/arcgis/rest/services/PKK6/CadastreObjects/MapServer/tile/%z/%y/%x',
             {
               tileTransparent: true
             }
           );
-        };
-        
-        window.ymaps.layer.storage.add('nspd#cadastre', NspdWmsLayer);
-        
-        const layerMapType = new window.ymaps.MapType('Кадастр НСПД', ['nspd#cadastre']);
-        mapInstanceRef.current.layers.add(layerMapType);
-        
-        cadastralLayerRef.current = layerMapType;
+          
+          mapInstanceRef.current.layers.add(layer);
+          cadastralLayerRef.current = layer;
+        } catch (error) {
+          console.error('Failed to add cadastral layer:', error);
+        }
       }
     } else {
       if (cadastralLayerRef.current) {
-        mapInstanceRef.current.layers.remove(cadastralLayerRef.current);
+        try {
+          mapInstanceRef.current.layers.remove(cadastralLayerRef.current);
+        } catch (error) {
+          console.error('Failed to remove cadastral layer:', error);
+        }
         cadastralLayerRef.current = null;
       }
     }
