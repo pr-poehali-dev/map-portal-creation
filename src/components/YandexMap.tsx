@@ -208,34 +208,32 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
     if (showCadastralLayer) {
       if (!cadastralLayerRef.current) {
         try {
-          // WMS слой кадастровых границ из НСПД через прокси
+          // WMS слой земельных участков из ЕГРН через НСПД
           const getTileUrl = (tileNumber: number[], tileZoom: number) => {
             const [x, y] = tileNumber;
             const z = tileZoom;
             
-            // Конвертируем tile в bbox для WMS
-            const n = Math.PI - (2 * Math.PI * y) / Math.pow(2, z);
-            const lat1 = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
-            const lon1 = (x / Math.pow(2, z)) * 360 - 180;
-            const lat2 = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(Math.PI - (2 * Math.PI * (y + 1)) / Math.pow(2, z)) - Math.exp(-(Math.PI - (2 * Math.PI * (y + 1)) / Math.pow(2, z)))));
-            const lon2 = ((x + 1) / Math.pow(2, z)) * 360 - 180;
+            // Web Mercator тайлы для EPSG:3857
+            const tileSize = 256;
+            const earthRadius = 6378137; // sradiusa из params
+            const initialResolution = 2 * Math.PI * earthRadius / tileSize;
+            const originShift = 2 * Math.PI * earthRadius / 2.0;
             
-            // Преобразуем в Web Mercator (EPSG:3857)
-            const toWebMercator = (lon: number, lat: number) => {
-              const x = lon * 20037508.34 / 180;
-              let y = Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180);
-              y = y * 20037508.34 / 180;
-              return [x, y];
-            };
+            const resolution = initialResolution / Math.pow(2, z);
             
-            const [minX, minY] = toWebMercator(lon1, lat2);
-            const [maxX, maxY] = toWebMercator(lon2, lat1);
+            const minX = x * tileSize * resolution - originShift;
+            const maxY = originShift - y * tileSize * resolution;
+            const maxX = (x + 1) * tileSize * resolution - originShift;
+            const minY = originShift - (y + 1) * tileSize * resolution;
+            
             const bbox = `${minX},${minY},${maxX},${maxY}`;
             
-            // Пробуем напрямую из браузера (работает только если браузер не блокирует CORS)
-            const directUrl = `https://nspd.gov.ru/api/aeggis/v3/36048/wms?REQUEST=GetMap&SERVICE=WMS&VERSION=1.3.0&FORMAT=image/png&STYLES=&TRANSPARENT=true&LAYERS=36048&WIDTH=256&HEIGHT=256&CRS=EPSG:3857&BBOX=${bbox}`;
+            // Базовый URL из PARAMS
+            const baseUrl = 'https://nspd.gov.ru/api/aeggis/v3/36048/wms?REQUEST=GetMap&SERVICE=WMS&VERSION=1.3.0&FORMAT=image%2Fpng&STYLES=&TRANSPARENT=true&LAYERS=36048&RANDOM=&WIDTH=256&HEIGHT=256&CRS=EPSG%3A3857&BBOX=';
             
-            // Используем CORS proxy как fallback
+            const directUrl = `${baseUrl}${bbox}`;
+            
+            // Используем CORS proxy
             return `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`;
           };
           
