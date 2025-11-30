@@ -157,7 +157,7 @@ export default function MapSidebar({
           </div>
           
           <ScrollArea className="flex-1" style={{ height: '100%' }}>
-            <div className="p-4 space-y-3">
+            <div className="p-4 space-y-1.5">
               {filteredData.map(item => (
                 <Card
                   key={item.id}
