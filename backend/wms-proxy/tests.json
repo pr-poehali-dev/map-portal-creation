@@ -1,0 +1,13 @@
+{
+  "tests": [
+    {
+      "name": "Test WMS tile request",
+      "method": "GET",
+      "path": "/?BBOX=4187533,7514066,4188557,7515090",
+      "expectedStatus": 200,
+      "expectedHeaders": {
+        "Content-Type": "image/png"
+      }
+    }
+  ]
+}

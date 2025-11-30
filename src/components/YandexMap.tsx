@@ -208,7 +208,7 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
     if (showCadastralLayer) {
       if (!cadastralLayerRef.current) {
         try {
-          // WMS слой кадастровых границ из НСПД
+          // WMS слой кадастровых границ из НСПД через прокси
           const getTileUrl = (tileNumber: number[], tileZoom: number) => {
             const [x, y] = tileNumber;
             const z = tileZoom;
@@ -232,7 +232,11 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
             const [maxX, maxY] = toWebMercator(lon2, lat1);
             const bbox = `${minX},${minY},${maxX},${maxY}`;
             
-            return `https://nspd.gov.ru/api/aeggis/v3/36048/wms?REQUEST=GetMap&SERVICE=WMS&VERSION=1.3.0&FORMAT=image/png&STYLES=&TRANSPARENT=true&LAYERS=36048&WIDTH=256&HEIGHT=256&CRS=EPSG:3857&BBOX=${bbox}`;
+            // Пробуем напрямую из браузера (работает только если браузер не блокирует CORS)
+            const directUrl = `https://nspd.gov.ru/api/aeggis/v3/36048/wms?REQUEST=GetMap&SERVICE=WMS&VERSION=1.3.0&FORMAT=image/png&STYLES=&TRANSPARENT=true&LAYERS=36048&WIDTH=256&HEIGHT=256&CRS=EPSG:3857&BBOX=${bbox}`;
+            
+            // Используем CORS proxy как fallback
+            return `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`;
           };
           
           const layer = new window.ymaps.Layer(getTileUrl, {
