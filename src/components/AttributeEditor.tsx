@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import Icon from '@/components/ui/icon';
 import { PolygonObject } from '@/types/polygon';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AttributeTemplate {
   id: number;
@@ -27,6 +28,7 @@ interface AttributeEditorProps {
 const ADMIN_API = 'https://functions.poehali.dev/3e92b954-4498-4bea-8de7-898ccb110b58';
 
 export default function AttributeEditor({ object, onSave, onCancel }: AttributeEditorProps) {
+  const { user } = useAuth();
   const [editedObject, setEditedObject] = useState<PolygonObject>(object);
   const [templates, setTemplates] = useState<AttributeTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,7 +42,7 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
   const loadAttributeTemplates = async () => {
     try {
       const response = await fetch(`${ADMIN_API}?action=attributes`, {
-        headers: { 'X-User-Id': localStorage.getItem('userId') || '' }
+        headers: { 'X-User-Id': user?.token || '' }
       });
       
       if (response.ok) {
