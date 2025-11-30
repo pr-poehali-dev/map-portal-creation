@@ -1,10 +1,11 @@
 '''
-Business: Proxy WMS requests to NSPD with proper headers
-Args: event with queryStringParameters (all WMS params)
-Returns: PNG image tile
+Business: Fetch cadastral parcels GeoJSON by bounding box from Rosreestr ArcGIS
+Args: event with queryStringParameters (bbox: west,south,east,north)
+Returns: GeoJSON with cadastral parcels geometries
 '''
 
 import requests
+import json
 from typing import Dict, Any
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -25,82 +26,91 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     if method != 'GET':
         return {
             'statusCode': 405,
-            'headers': {'Access-Control-Allow-Origin': '*'},
-            'body': 'Method not allowed'
+            'headers': {
+                'Access-Control-Allow-Origin': '*',
+                'Content-Type': 'application/json'
+            },
+            'isBase64Encoded': False,
+            'body': json.dumps({'error': 'Method not allowed'})
         }
     
     params = event.get('queryStringParameters', {})
-    bbox = params.get('BBOX', '')
+    bbox = params.get('bbox', '')
     
     if not bbox:
         return {
             'statusCode': 400,
-            'headers': {'Access-Control-Allow-Origin': '*'},
-            'body': 'Missing BBOX parameter'
+            'headers': {
+                'Access-Control-Allow-Origin': '*',
+                'Content-Type': 'application/json'
+            },
+            'isBase64Encoded': False,
+            'body': json.dumps({'error': 'Missing bbox parameter'})
         }
     
-    wms_url = 'https://nspd.gov.ru/api/aeggis/v4/36048/wms'
+    url = 'https://pkk.rosreestr.ru/arcgis/rest/services/PKK6/CadastreOriginal/MapServer/0/query'
     
-    wms_params = {
-        'REQUEST': 'GetMap',
-        'SERVICE': 'WMS',
-        'VERSION': '1.3.0',
-        'FORMAT': 'image/png',
-        'STYLES': '',
-        'TRANSPARENT': 'true',
-        'LAYERS': '36048',
-        'WIDTH': '256',
-        'HEIGHT': '256',
-        'CRS': 'EPSG:3857',
-        'BBOX': bbox
+    query_params = {
+        'f': 'geojson',
+        'geometry': bbox,
+        'geometryType': 'esriGeometryEnvelope',
+        'spatialRel': 'esriSpatialRelIntersects',
+        'outFields': 'cn,id',
+        'returnGeometry': 'true',
+        'inSR': '4326',
+        'outSR': '4326'
     }
     
     headers = {
-        'Referer': 'https://nspd.gov.ru/map?thematic=PKK&theme_id=1&is_copy_url=true&baseLayerId=&active_layers=36048',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-        'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Accept-Encoding': 'gzip, deflate, br, zstd',
-        'Sec-Fetch-Dest': 'image',
-        'Sec-Fetch-Mode': 'no-cors',
-        'Sec-Fetch-Site': 'same-origin',
-        'Origin': 'https://nspd.gov.ru',
-        'Connection': 'keep-alive'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json',
+        'Referer': 'https://pkk.rosreestr.ru/'
     }
     
     try:
-        response = requests.get(wms_url, params=wms_params, headers=headers, timeout=10, verify=False)
+        response = requests.get(url, params=query_params, headers=headers, timeout=15, verify=False)
         
         if response.status_code != 200:
             return {
                 'statusCode': response.status_code,
-                'headers': {'Access-Control-Allow-Origin': '*'},
-                'body': f'WMS error: {response.status_code}'
+                'headers': {
+                    'Access-Control-Allow-Origin': '*',
+                    'Content-Type': 'application/json'
+                },
+                'isBase64Encoded': False,
+                'body': json.dumps({'error': 'ArcGIS API error', 'status': response.status_code})
             }
         
-        import base64
-        image_base64 = base64.b64encode(response.content).decode('utf-8')
+        geojson = response.json()
         
         return {
             'statusCode': 200,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
-                'Content-Type': 'image/png',
-                'Cache-Control': 'public, max-age=86400'
+                'Content-Type': 'application/json',
+                'Cache-Control': 'public, max-age=3600'
             },
-            'isBase64Encoded': True,
-            'body': image_base64
+            'isBase64Encoded': False,
+            'body': json.dumps(geojson)
         }
     
     except requests.exceptions.Timeout:
         return {
             'statusCode': 504,
-            'headers': {'Access-Control-Allow-Origin': '*'},
-            'body': 'Request timeout'
+            'headers': {
+                'Access-Control-Allow-Origin': '*',
+                'Content-Type': 'application/json'
+            },
+            'isBase64Encoded': False,
+            'body': json.dumps({'error': 'Request timeout'})
         }
     except Exception as e:
         return {
             'statusCode': 500,
-            'headers': {'Access-Control-Allow-Origin': '*'},
-            'body': f'Error: {str(e)}'
+            'headers': {
+                'Access-Control-Allow-Origin': '*',
+                'Content-Type': 'application/json'
+            },
+            'isBase64Encoded': False,
+            'body': json.dumps({'error': str(e)})
         }

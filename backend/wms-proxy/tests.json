@@ -1,13 +1,14 @@
 {
   "tests": [
     {
-      "name": "Test WMS tile request",
+      "name": "Fetch cadastral parcels by bbox",
       "method": "GET",
-      "path": "/?BBOX=4187533,7514066,4188557,7515090",
+      "path": "/?bbox=37.5,55.7,37.6,55.8",
       "expectedStatus": 200,
-      "expectedHeaders": {
-        "Content-Type": "image/png"
-      }
+      "expectedBody": {
+        "type": "string"
+      },
+      "bodyMatcher": "partial"
     }
   ]
 }

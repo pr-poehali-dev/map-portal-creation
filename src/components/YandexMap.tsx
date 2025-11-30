@@ -215,34 +215,43 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
     if (showCadastralLayer) {
       const loadCadastralData = async () => {
         try {
+          const zoom = mapInstanceRef.current.getZoom();
+          
+          // Загружаем только при высоком зуме (15+) чтобы не перегружать
+          if (zoom < 15) {
+            console.log('⏭️ Zoom too low for cadastral data, increase zoom to 15+');
+            return;
+          }
+          
           const bounds = mapInstanceRef.current.getBounds();
           const [[south, west], [north, east]] = bounds;
           
-          // Запрос к ArcGIS FeatureServer для получения векторных границ участков
+          // Запрос через наш backend прокси
           const bbox = `${west},${south},${east},${north}`;
-          const url = `https://pkk.rosreestr.ru/arcgis/rest/services/PKK6/CadastreOriginal/MapServer/0/query`;
+          const backendUrl = 'https://functions.poehali.dev/2f81dfc7-e194-4d3d-b534-101134e59c05';
           
-          const params = new URLSearchParams({
-            f: 'geojson',
-            geometry: bbox,
-            geometryType: 'esriGeometryEnvelope',
-            spatialRel: 'esriSpatialRelIntersects',
-            outFields: 'cn,id',
-            returnGeometry: 'true',
-            inSR: '4326',
-            outSR: '4326'
-          });
+          console.log(`🔍 Loading cadastral data for bbox: ${bbox}`);
+          const response = await fetch(`${backendUrl}?bbox=${encodeURIComponent(bbox)}`);
           
-          const response = await fetch(`${url}?${params}`);
+          if (!response.ok) {
+            console.error(`❌ Backend error: ${response.status}`);
+            return;
+          }
+          
           const geojson = await response.json();
+          
+          if (geojson.error) {
+            console.error('❌ API error:', geojson.error);
+            return;
+          }
           
           if (geojson.features && geojson.features.length > 0) {
             geojson.features.forEach((feature: any) => {
-              if (feature.geometry.type === 'Polygon') {
+              if (feature.geometry && feature.geometry.type === 'Polygon') {
                 const coords = feature.geometry.coordinates[0].map(([lng, lat]: [number, number]) => [lat, lng]);
                 
                 const polygon = new window.ymaps.Polygon([coords], {
-                  hintContent: `Кадастровый номер: ${feature.properties.cn || 'Не указан'}`
+                  hintContent: `Кадастровый номер: ${feature.properties?.cn || 'Не указан'}`
                 }, {
                   fillColor: '#FF000033',
                   strokeColor: '#FF0000',
@@ -257,6 +266,8 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
             });
             
             console.log(`✅ Loaded ${geojson.features.length} cadastral parcels`);
+          } else {
+            console.log('ℹ️ No cadastral parcels in this area');
           }
         } catch (error) {
           console.error('❌ Failed to load cadastral data:', error);
@@ -265,14 +276,17 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
 
       loadCadastralData();
       
-      // Обновляем данные при изменении bounds карты
+      // Обновляем данные при изменении bounds карты (с debounce)
+      let timeout: any;
       const boundsChangeHandler = () => {
-        loadCadastralData();
+        clearTimeout(timeout);
+        timeout = setTimeout(loadCadastralData, 500);
       };
       
       mapInstanceRef.current.events.add('boundschange', boundsChangeHandler);
       
       return () => {
+        clearTimeout(timeout);
         mapInstanceRef.current?.events.remove('boundschange', boundsChangeHandler);
       };
     }
