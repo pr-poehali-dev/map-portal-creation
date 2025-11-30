@@ -208,25 +208,12 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
     if (showCadastralLayer) {
       if (!cadastralLayerRef.current) {
         const NspdWmsLayer = function () {
-          const getTileUrl = (tileNumber: any, tileZoom: any) => {
-            const [x, y] = tileNumber;
-            const z = tileZoom;
-            
-            const tileSize = 256;
-            const worldSize = Math.pow(2, z) * tileSize;
-            const minX = (x * tileSize / worldSize) * 40075016.68 - 20037508.34;
-            const maxX = ((x + 1) * tileSize / worldSize) * 40075016.68 - 20037508.34;
-            const minY = 20037508.34 - ((y + 1) * tileSize / worldSize) * 40075016.68;
-            const maxY = 20037508.34 - (y * tileSize / worldSize) * 40075016.68;
-            
-            const bbox = `${minX},${minY},${maxX},${maxY}`;
-            
-            return `https://nspd.gov.ru/api/aeggis/v3/36048/wms?REQUEST=GetMap&SERVICE=WMS&VERSION=1.3.0&FORMAT=image/png&STYLES=&TRANSPARENT=true&LAYERS=36048&WIDTH=256&HEIGHT=256&CRS=EPSG:3857&BBOX=${bbox}`;
-          };
-          
-          return new window.ymaps.Layer(getTileUrl, {
-            tileTransparent: true
-          });
+          return new window.ymaps.Layer(
+            'https://pkk.rosreestr.ru/arcgis/rest/services/PKK6/CadastreObjects/MapServer/tile/%z/%y/%x',
+            {
+              tileTransparent: true
+            }
+          );
         };
         
         window.ymaps.layer.storage.add('nspd#cadastre', NspdWmsLayer);
