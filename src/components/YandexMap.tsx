@@ -217,17 +217,16 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
 
     if (showCadastralLayer) {
       try {
-        // WMS слой кадастровых границ из НСПД
+        // WMS слой через Image Proxy
         const getTileUrl = (tileNumber: number[], tileZoom: number) => {
           const [x, y] = tileNumber;
           const z = tileZoom;
           
-          // Web Mercator расчёт BBOX
+          // Web Mercator расчёт BBOX  
           const tileSize = 256;
           const earthRadius = 6378137;
           const initialResolution = 2 * Math.PI * earthRadius / tileSize;
           const originShift = 2 * Math.PI * earthRadius / 2.0;
-          
           const resolution = initialResolution / Math.pow(2, z);
           
           const minX = x * tileSize * resolution - originShift;
@@ -235,17 +234,20 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
           const maxX = (x + 1) * tileSize * resolution - originShift;
           const minY = originShift - (y + 1) * tileSize * resolution;
           
-          // Округление до 10 знаков
           const round10 = (num: number) => Math.round(num * 1e10) / 1e10;
           const bbox = `${round10(minX)},${round10(minY)},${round10(maxX)},${round10(maxY)}`;
           
-          // Прямой запрос к NSPD v4 API (работает из браузера)
-          return `https://nspd.gov.ru/api/aeggis/v4/36048/wms?REQUEST=GetMap&SERVICE=WMS&VERSION=1.3.0&FORMAT=image%2Fpng&STYLES=&TRANSPARENT=true&LAYERS=36048&RANDOM=&WIDTH=256&HEIGHT=256&CRS=EPSG%3A3857&BBOX=${bbox}`;
+          const wmsUrl = `https://nspd.gov.ru/api/aeggis/v4/36048/wms?REQUEST=GetMap&SERVICE=WMS&VERSION=1.3.0&FORMAT=image%2Fpng&STYLES=&TRANSPARENT=true&LAYERS=36048&RANDOM=&WIDTH=256&HEIGHT=256&CRS=EPSG%3A3857&BBOX=${bbox}`;
+          
+          // Используем Images.weserv.nl как CORS proxy для изображений
+          return `https://images.weserv.nl/?url=${encodeURIComponent(wmsUrl)}`;
         };
         
         const layer = new window.ymaps.Layer(getTileUrl, {
           tileTransparent: true,
-          projection: window.ymaps.projection.sphericalMercator
+          projection: window.ymaps.projection.sphericalMercator,
+          // Добавляем crossOrigin для обхода CORS
+          tileUrlTemplate: getTileUrl
         });
         
         mapInstanceRef.current.layers.add(layer);
