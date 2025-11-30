@@ -217,13 +217,30 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
 
     if (showCadastralLayer) {
       try {
-        // Используем публичный кадастровый слой PKK5 от OpenStreetMap Russia
+        // WMS через corsproxy.io
         const getTileUrl = (tileNumber: number[], tileZoom: number) => {
           const [x, y] = tileNumber;
           const z = tileZoom;
           
-          // PKK5 tile server - публичный кадастровый слой России
-          return `https://pkk.rosreestr.ru/arcgis/rest/services/PKK6/CadastreSelected/MapServer/tile/${z}/${y}/${x}`;
+          // Web Mercator BBOX расчёт
+          const tileSize = 256;
+          const earthRadius = 6378137;
+          const initialResolution = 2 * Math.PI * earthRadius / tileSize;
+          const originShift = 2 * Math.PI * earthRadius / 2.0;
+          const resolution = initialResolution / Math.pow(2, z);
+          
+          const minX = x * tileSize * resolution - originShift;
+          const maxY = originShift - y * tileSize * resolution;
+          const maxX = (x + 1) * tileSize * resolution - originShift;
+          const minY = originShift - (y + 1) * tileSize * resolution;
+          
+          const round10 = (num: number) => Math.round(num * 1e10) / 1e10;
+          const bbox = `${round10(minX)},${round10(minY)},${round10(maxX)},${round10(maxY)}`;
+          
+          const wmsUrl = `https://nspd.gov.ru/api/aeggis/v4/36048/wms?REQUEST=GetMap&SERVICE=WMS&VERSION=1.3.0&FORMAT=image%2Fpng&STYLES=&TRANSPARENT=true&LAYERS=36048&WIDTH=256&HEIGHT=256&CRS=EPSG%3A3857&BBOX=${bbox}`;
+          
+          // Используем corsproxy.io для обхода CORS
+          return `https://corsproxy.io/?${encodeURIComponent(wmsUrl)}`;
         };
         
         const layer = new window.ymaps.Layer(getTileUrl, {
@@ -233,7 +250,7 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
         
         mapInstanceRef.current.layers.add(layer);
         cadastralLayerRef.current = layer;
-        console.log('✅ PKK cadastral layer added');
+        console.log('✅ NSPD cadastral layer via corsproxy.io added');
       } catch (error) {
         console.error('❌ Failed to add cadastral layer:', error);
       }
