@@ -8,6 +8,7 @@ import Icon from '@/components/ui/icon';
 import AttributeEditor from '@/components/AttributeEditor';
 import AIAnalysisDialog from '@/components/AIAnalysisDialog';
 import CompanyDetailsDialog from '@/components/CompanyDetailsDialog';
+import SegmentBadges from '@/components/SegmentBadges';
 import { PolygonObject } from '@/types/polygon';
 import { formatArea } from '@/utils/geoUtils';
 
@@ -144,11 +145,13 @@ export default function ObjectDetailsSheet({
               <div>
                 <Label className="text-sm font-semibold mb-3 block">Основная информация</Label>
                 <Card className="p-4 space-y-3">
-                  <div className="flex justify-between items-center gap-4">
+                  <div className="flex justify-between items-start gap-4">
                     <span className="text-sm text-muted-foreground flex-shrink-0">Сегмент</span>
-                    <span className="text-sm font-medium text-foreground text-right break-words">
-                      {selectedObject.attributes?.['Сегмент'] || selectedObject.attributes?.['сегмент'] || selectedObject.segment || 'Не указан'}
-                    </span>
+                    <div className="flex-1 flex justify-end">
+                      <SegmentBadges 
+                        segments={selectedObject.attributes?.['Сегмент'] || selectedObject.attributes?.['сегмент'] || selectedObject.segment || ''}
+                      />
+                    </div>
                   </div>
                   <div className="flex justify-between items-start gap-4">
                     <span className="text-sm text-muted-foreground flex-shrink-0">ID объекта</span>

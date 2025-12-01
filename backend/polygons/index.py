@@ -13,6 +13,26 @@ def json_serializer(obj):
         return obj.isoformat()
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
+def hex_to_rgb(hex_color: str) -> tuple:
+    hex_color = hex_color.lstrip('#')
+    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+def rgb_to_hex(r: int, g: int, b: int) -> str:
+    return f'#{r:02x}{g:02x}{b:02x}'
+
+def blend_colors(colors: list) -> str:
+    if not colors:
+        return '#3b82f6'
+    if len(colors) == 1:
+        return colors[0]
+    
+    rgb_colors = [hex_to_rgb(c) for c in colors]
+    avg_r = sum(r for r, g, b in rgb_colors) // len(rgb_colors)
+    avg_g = sum(g for r, g, b in rgb_colors) // len(rgb_colors)
+    avg_b = sum(b for r, g, b in rgb_colors) // len(rgb_colors)
+    
+    return rgb_to_hex(avg_r, avg_g, avg_b)
+
 def check_permission(cur, user_id: str, resource_type: str, resource_id: str = None, required_level: str = 'read') -> bool:
     cur.execute("SELECT role FROM users WHERE id = '" + user_id.replace("'", "''") + "'")
     user = cur.fetchone()
@@ -194,15 +214,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 for row in all_results:
                     if row['user_id'] == user_id or row['user_id'] is None:
                         polygon_dict = dict(row)
-                        if polygon_dict.get('segment') and polygon_dict['segment'] in segment_colors:
-                            polygon_dict['color'] = segment_colors[polygon_dict['segment']]
+                        if polygon_dict.get('segment'):
+                            segments_list = [s.strip() for s in polygon_dict['segment'].split(',')]
+                            colors = [segment_colors[s] for s in segments_list if s in segment_colors]
+                            if colors:
+                                polygon_dict['color'] = blend_colors(colors)
                         filtered_results.append(polygon_dict)
                     else:
                         segment_name = row.get('segment') or row.get('layer', '')
                         if check_permission(cur, user_id, 'layer', segment_name, 'read'):
                             polygon_dict = dict(row)
-                            if polygon_dict.get('segment') and polygon_dict['segment'] in segment_colors:
-                                polygon_dict['color'] = segment_colors[polygon_dict['segment']]
+                            if polygon_dict.get('segment'):
+                                segments_list = [s.strip() for s in polygon_dict['segment'].split(',')]
+                                colors = [segment_colors[s] for s in segments_list if s in segment_colors]
+                                if colors:
+                                    polygon_dict['color'] = blend_colors(colors)
                             filtered_results.append(polygon_dict)
                 
                 print(f"DEBUG: Filtered polygons: {len(filtered_results)}")
@@ -296,6 +322,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'error': 'No permission to create objects in this segment'})
                 }
             
+            cur.execute("SELECT id, name, color FROM segments")
+            segments = cur.fetchall()
+            segment_colors = {seg['name']: seg['color'] for seg in segments}
+            
+            segments_list = [s.strip() for s in segment.split(',')]
+            colors = [segment_colors[s] for s in segments_list if s in segment_colors]
+            final_color = blend_colors(colors) if colors else body.get('color', '#3b82f6')
+            
             print(f"DEBUG: Creating polygon with data: id={body['id']}, name={body['name']}, area={body['area']}, type={body['type']}")
             
             sql_query = (
@@ -307,7 +341,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "" + (str(body['population']) if body.get('population') else 'NULL') + ", "
                 "" + ("'" + body['status'].replace("'", "''") + "'" if body.get('status') else 'NULL') + ", "
                 "'" + json.dumps(body['coordinates']).replace("'", "''") + "', "
-                "'" + body['color'].replace("'", "''") + "', "
+                "'" + final_color.replace("'", "''") + "', "
                 "'" + segment.replace("'", "''") + "', "
                 "" + str(body.get('visible', True)).lower() + ", "
                 "'" + json.dumps(body.get('attributes', {})).replace("'", "''") + "', "
@@ -362,6 +396,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             body = json.loads(event.get('body', '{}'))
             segment = body.get('segment') or body.get('layer', '')
             
+            cur.execute("SELECT id, name, color FROM segments")
+            segments = cur.fetchall()
+            segment_colors = {seg['name']: seg['color'] for seg in segments}
+            
+            segments_list = [s.strip() for s in segment.split(',')]
+            colors = [segment_colors[s] for s in segments_list if s in segment_colors]
+            final_color = blend_colors(colors) if colors else body.get('color', '#3b82f6')
+            
             cur.execute(
                 "UPDATE polygon_objects SET "
                 "name = '" + body['name'].replace("'", "''") + "', "
@@ -370,7 +412,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "population = " + (str(body['population']) if body.get('population') else 'NULL') + ", "
                 "status = '" + body['status'].replace("'", "''") + "', "
                 "coordinates = '" + json.dumps(body['coordinates']).replace("'", "''") + "', "
-                "color = '" + body['color'].replace("'", "''") + "', "
+                "color = '" + final_color.replace("'", "''") + "', "
                 "segment = '" + segment.replace("'", "''") + "', "
                 "visible = " + str(body.get('visible', True)).lower() + ", "
                 "attributes = '" + json.dumps(body.get('attributes', {})).replace("'", "''") + "', "
