@@ -97,7 +97,7 @@ export function useAdminData() {
     'X-User-Id': user?.token || ''
   });
 
-  const SEGMENTS_API = 'https://functions.poehali.dev/a81ed165-eee8-42a9-aa73-c1f66b3a7de4';
+  const SEGMENTS_API = 'https://functions.poehali.dev/a0768bda-66ad-4c1e-b0f8-a32596d094b8';
 
   const loadData = async () => {
     setIsLoading(true);

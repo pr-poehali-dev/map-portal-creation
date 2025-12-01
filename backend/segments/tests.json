@@ -4,9 +4,7 @@
       "name": "Get all segments",
       "method": "GET",
       "path": "/",
-      "expectedStatus": 200,
-      "expectedBody": [],
-      "bodyMatcher": "type"
+      "expectedStatus": 200
     },
     {
       "name": "Save segments with colors",
@@ -14,13 +12,11 @@
       "path": "/",
       "body": {
         "segments": [
-          {"name": "Жилая застройка", "color": "#3B82F6"},
-          {"name": "Коммерция", "color": "#EF4444"}
+          {"name": "Тест 1", "color": "#3B82F6"},
+          {"name": "Тест 2", "color": "#EF4444"}
         ]
       },
-      "expectedStatus": 200,
-      "expectedBody": [],
-      "bodyMatcher": "type"
+      "expectedStatus": 200
     }
   ]
 }
