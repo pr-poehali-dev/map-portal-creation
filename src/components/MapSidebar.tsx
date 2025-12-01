@@ -14,6 +14,7 @@ import { formatArea } from '@/utils/geoUtils';
 import AIAssistant from './AIAssistant';
 import { BadgePulse } from '@/components/ui/badge-pulse';
 import CadastreImport from './CadastreImport';
+import SegmentManager from './SegmentManager';
 
 interface MapSidebarProps {
   user: any;
@@ -322,6 +323,16 @@ export default function MapSidebar({
         <TabsContent value="layers" className="flex-1 flex flex-col mt-0 min-h-0 data-[state=inactive]:hidden">
           <ScrollArea className="flex-1">
             <div className="p-4 space-y-4">
+              {user?.role === 'admin' && (
+                <div className="space-y-3">
+                  <Label className="text-xs text-sidebar-foreground/60">
+                    <Icon name="Settings" size={12} className="inline mr-1" />
+                    Настройки
+                  </Label>
+                  <SegmentManager />
+                </div>
+              )}
+              
               <div className="text-center py-8 text-muted-foreground">
                 <Icon name="Layers" size={48} className="mx-auto mb-3 opacity-20" />
                 <p className="text-sm mb-2">Технические слои карты</p>
