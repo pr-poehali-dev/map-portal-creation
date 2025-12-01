@@ -238,6 +238,18 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
         const statusOptions = template.options ? template.options.split(',').map(o => o.trim()) : [];
         const conditionalValue = typeof value === 'object' ? value : { status: '', dateFrom: '', dateTo: '' };
         
+        const handleDateFromChange = (newDateFrom: string) => {
+          const updatedValue = { ...conditionalValue, dateFrom: newDateFrom };
+          
+          if (conditionalValue.status === 'Аренда' && newDateFrom && !conditionalValue.dateTo) {
+            const fromDate = new Date(newDateFrom);
+            fromDate.setFullYear(fromDate.getFullYear() + 49);
+            updatedValue.dateTo = fromDate.toISOString().split('T')[0];
+          }
+          
+          handleAttributeChange(template.name, updatedValue);
+        };
+        
         return (
           <div className="space-y-3">
             <Select
@@ -263,7 +275,7 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
                   <Input
                     type="date"
                     value={conditionalValue.dateFrom || ''}
-                    onChange={(e) => handleAttributeChange(template.name, { ...conditionalValue, dateFrom: e.target.value })}
+                    onChange={(e) => handleDateFromChange(e.target.value)}
                   />
                 </div>
                 
