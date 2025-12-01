@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Icon from '@/components/ui/icon';
+import { useState } from 'react';
+import func2url from '../../backend/func2url.json';
 
 interface Company {
   id: string;
@@ -58,6 +60,37 @@ export default function AdminCompaniesTab({
   deleteCompany,
   setEditingCompany
 }: AdminCompaniesTabProps) {
+  const [isLoadingDadata, setIsLoadingDadata] = useState(false);
+  const [dadataError, setDadataError] = useState<string | null>(null);
+
+  const fetchCompanyData = async (inn: string) => {
+    if (!inn || inn.length < 10) return;
+    
+    setIsLoadingDadata(true);
+    setDadataError(null);
+    
+    try {
+      const response = await fetch(`${func2url.dadata}?inn=${inn}`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        setDadataError(data.error || 'Ошибка получения данных');
+        return;
+      }
+      
+      setNewCompany({
+        ...newCompany,
+        name: data.name || newCompany.name,
+        address: data.address || newCompany.address,
+        inn: inn
+      });
+    } catch (error) {
+      setDadataError('Ошибка подключения к сервису');
+    } finally {
+      setIsLoadingDadata(false);
+    }
+  };
+
   const handleOpenDialog = (company?: Company) => {
     if (company) {
       setEditingCompany(company);
@@ -123,11 +156,35 @@ export default function AdminCompaniesTab({
               </div>
               <div>
                 <Label htmlFor="inn">ИНН</Label>
-                <Input
-                  id="inn"
-                  value={newCompany.inn}
-                  onChange={(e) => setNewCompany({ ...newCompany, inn: e.target.value })}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="inn"
+                    value={newCompany.inn}
+                    onChange={(e) => {
+                      setNewCompany({ ...newCompany, inn: e.target.value });
+                      setDadataError(null);
+                    }}
+                    placeholder="10 или 12 цифр"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fetchCompanyData(newCompany.inn)}
+                    disabled={isLoadingDadata || !newCompany.inn || newCompany.inn.length < 10}
+                  >
+                    {isLoadingDadata ? (
+                      <Icon name="Loader2" size={16} className="animate-spin" />
+                    ) : (
+                      <Icon name="Search" size={16} />
+                    )}
+                  </Button>
+                </div>
+                {dadataError && (
+                  <p className="text-sm text-red-500 mt-1">{dadataError}</p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  Введите ИНН и нажмите на поиск для автозаполнения
+                </p>
               </div>
               <div>
                 <Label htmlFor="email">Email</Label>
