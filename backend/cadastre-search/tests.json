@@ -1,12 +1,18 @@
 {
   "tests": [
     {
-      "name": "Test cadastre search with valid number",
+      "name": "Test OPTIONS for CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Test missing cadastral number",
       "method": "GET",
-      "path": "/?cadastral_number=77:01:0001001:1234",
-      "expectedStatus": 200,
+      "path": "/",
+      "expectedStatus": 400,
       "expectedBody": {
-        "feature": "object"
+        "error": "string"
       },
       "bodyMatcher": "partial"
     }

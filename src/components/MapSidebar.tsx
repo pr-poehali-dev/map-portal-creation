@@ -13,6 +13,7 @@ import { PolygonObject } from '@/types/polygon';
 import { formatArea } from '@/utils/geoUtils';
 import AIAssistant from './AIAssistant';
 import { BadgePulse } from '@/components/ui/badge-pulse';
+import CadastreImport from './CadastreImport';
 
 interface MapSidebarProps {
   user: any;
@@ -78,6 +79,8 @@ export default function MapSidebar({
   loadSampleData
 }: MapSidebarProps) {
   const [showAIBadge, setShowAIBadge] = useState(true);
+
+
 
   const getOwnerStats = (ownerName: string) => {
     if (ownerName === 'Все') return { count: polygonData.length, totalArea: 0 };
@@ -199,6 +202,11 @@ export default function MapSidebar({
 
         <TabsContent value="objects" className="flex-1 flex flex-col mt-0 min-h-0 data-[state=inactive]:hidden">
           <div className="px-4 py-3 border-b border-sidebar-border flex-shrink-0 space-y-3">
+            <CadastreImport 
+              userId={user?.id} 
+              onSuccess={() => window.location.reload()} 
+            />
+            
             <div>
               <Label className="text-xs text-sidebar-foreground/60 mb-2 block">Фильтр по типу</Label>
               <div className="flex flex-wrap gap-2">

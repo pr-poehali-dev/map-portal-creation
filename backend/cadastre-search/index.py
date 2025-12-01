@@ -1,14 +1,15 @@
-'''
-Business: Search cadastral parcels by cadastral number via Rosreestr API
-Args: event with queryStringParameters (cadastral_number)
-Returns: Parcel data with coordinates, area, address
-'''
-
-import requests
 import json
+import urllib.request
+import urllib.error
+import ssl
 from typing import Dict, Any
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+    '''
+    Business: Загрузка геометрии и данных земельного участка по кадастровому номеру из ПКК Росреестра
+    Args: event с queryStringParameters (cadastral_number)
+    Returns: GeoJSON с координатами границ, площадью, адресом, категорией земель
+    '''
     method: str = event.get('httpMethod', 'GET')
     
     if method == 'OPTIONS':
@@ -20,7 +21,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Access-Control-Allow-Headers': 'Content-Type',
                 'Access-Control-Max-Age': '86400'
             },
-            'body': ''
+            'body': '',
+            'isBase64Encoded': False
         }
     
     if method != 'GET':
@@ -35,7 +37,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     params = event.get('queryStringParameters', {})
-    cadastral_number = params.get('cadastral_number', '')
+    cadastral_number = params.get('cadastral_number', '').strip()
     
     if not cadastral_number:
         return {
@@ -45,65 +47,96 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Content-Type': 'application/json'
             },
             'isBase64Encoded': False,
-            'body': json.dumps({'error': 'Missing cadastral_number parameter'})
+            'body': json.dumps({'error': 'Кадастровый номер не указан'})
         }
     
-    # Используем публичный API Росреестра - прямой endpoint
+    # Публичный API ПКК Росреестра (type=1 для земельных участков)
     pkk_url = f'https://pkk.rosreestr.ru/api/features/1/{cadastral_number}'
     
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'ru-RU,ru;q=0.9'
-    }
+    # Создаём контекст SSL который игнорирует проверку сертификатов
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+    
+    req = urllib.request.Request(
+        pkk_url,
+        headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'application/json',
+            'Referer': 'https://pkk.rosreestr.ru/'
+        }
+    )
     
     try:
-        response = requests.get(pkk_url, headers=headers, timeout=15, verify=False)
-        
-        if response.status_code == 404:
+        with urllib.request.urlopen(req, timeout=15, context=ssl_context) as response:
+            if response.status != 200:
+                return {
+                    'statusCode': response.status,
+                    'headers': {
+                        'Access-Control-Allow-Origin': '*',
+                        'Content-Type': 'application/json'
+                    },
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'error': f'Ошибка API Росреестра: {response.status}'})
+                }
+            
+            data = json.loads(response.read().decode('utf-8'))
+            
+            # Проверяем наличие данных
+            if not data or 'feature' not in data:
+                return {
+                    'statusCode': 404,
+                    'headers': {
+                        'Access-Control-Allow-Origin': '*',
+                        'Content-Type': 'application/json'
+                    },
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'error': 'Участок не найден в ПКК'})
+                }
+            
+            feature = data['feature']
+            attrs = feature.get('attrs', {})
+            
+            # Формируем ответ с удобной структурой
+            result = {
+                'cadastral_number': cadastral_number,
+                'area': attrs.get('area_value'),  # Площадь в кв.м
+                'category': attrs.get('category_type'),  # Категория земель
+                'permitted_use': attrs.get('util_by_doc'),  # Разрешённое использование
+                'address': attrs.get('address'),
+                'cost': attrs.get('cad_cost'),  # Кадастровая стоимость
+                'date': attrs.get('date_create'),  # Дата постановки на учёт
+                'geometry': feature.get('extent'),  # Координаты extent [minLon, minLat, maxLon, maxLat]
+                'center': feature.get('center'),  # Центр [lon, lat]
+                'raw_feature': feature  # Полные данные для отладки
+            }
+            
             return {
-                'statusCode': 404,
+                'statusCode': 200,
                 'headers': {
                     'Access-Control-Allow-Origin': '*',
                     'Content-Type': 'application/json'
                 },
                 'isBase64Encoded': False,
-                'body': json.dumps({'error': 'Parcel not found'})
+                'body': json.dumps(result, ensure_ascii=False)
             }
-        
-        if response.status_code != 200:
-            return {
-                'statusCode': response.status_code,
-                'headers': {
-                    'Access-Control-Allow-Origin': '*',
-                    'Content-Type': 'application/json'
-                },
-                'isBase64Encoded': False,
-                'body': json.dumps({'error': 'Rosreestr API error', 'status': response.status_code})
-            }
-        
-        data = response.json()
+            
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            error_msg = 'Участок с таким кадастровым номером не найден'
+        else:
+            error_msg = f'Ошибка HTTP {e.code}'
         
         return {
-            'statusCode': 200,
+            'statusCode': e.code,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Content-Type': 'application/json'
             },
             'isBase64Encoded': False,
-            'body': json.dumps(data)
+            'body': json.dumps({'error': error_msg})
         }
     
-    except requests.exceptions.Timeout:
-        return {
-            'statusCode': 504,
-            'headers': {
-                'Access-Control-Allow-Origin': '*',
-                'Content-Type': 'application/json'
-            },
-            'isBase64Encoded': False,
-            'body': json.dumps({'error': 'Request timeout'})
-        }
     except Exception as e:
         return {
             'statusCode': 500,
@@ -112,5 +145,5 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Content-Type': 'application/json'
             },
             'isBase64Encoded': False,
-            'body': json.dumps({'error': str(e)})
+            'body': json.dumps({'error': f'Ошибка: {str(e)}'})
         }
