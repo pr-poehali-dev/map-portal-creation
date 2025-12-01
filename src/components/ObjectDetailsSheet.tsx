@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import Icon from '@/components/ui/icon';
 import AttributeEditor from '@/components/AttributeEditor';
 import AIAnalysisDialog from '@/components/AIAnalysisDialog';
+import CompanyDetailsDialog from '@/components/CompanyDetailsDialog';
 import { PolygonObject } from '@/types/polygon';
 import { formatArea } from '@/utils/geoUtils';
 
@@ -30,6 +31,21 @@ export default function ObjectDetailsSheet({
   handleExportSelected
 }: ObjectDetailsSheetProps) {
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [companyDialogOpen, setCompanyDialogOpen] = useState(false);
+  const [selectedCompanyInn, setSelectedCompanyInn] = useState<string>('');
+
+  const extractInnFromOwner = (ownerString: string): string | null => {
+    const innMatch = ownerString.match(/ИНН\s*(\d{10,12})/);
+    return innMatch ? innMatch[1] : null;
+  };
+
+  const handleOwnerClick = (ownerValue: string) => {
+    const inn = extractInnFromOwner(ownerValue);
+    if (inn) {
+      setSelectedCompanyInn(inn);
+      setCompanyDialogOpen(true);
+    }
+  };
 
   if (!selectedObject) return null;
 
@@ -39,6 +55,11 @@ export default function ObjectDetailsSheet({
         open={aiDialogOpen}
         onOpenChange={setAiDialogOpen}
         object={selectedObject}
+      />
+      <CompanyDetailsDialog
+        inn={selectedCompanyInn}
+        open={companyDialogOpen}
+        onOpenChange={setCompanyDialogOpen}
       />
     <Sheet open={!!selectedObject} onOpenChange={() => {
       setSelectedObject(null);
@@ -137,12 +158,27 @@ export default function ObjectDetailsSheet({
               <div>
                 <Label className="text-sm font-semibold mb-3 block">Атрибуты</Label>
                 <Card className="p-4 space-y-3">
-                  {Object.entries(selectedObject.attributes).map(([key, value]) => (
-                    <div key={key} className="flex justify-between items-start gap-4">
-                      <span className="text-sm text-muted-foreground capitalize flex-shrink-0">{key}</span>
-                      <span className="text-sm font-medium text-foreground text-right break-words">{value}</span>
-                    </div>
-                  ))}
+                  {Object.entries(selectedObject.attributes).map(([key, value]) => {
+                    const isOwner = key.toLowerCase() === 'правообладатель';
+                    const inn = isOwner ? extractInnFromOwner(String(value)) : null;
+                    
+                    return (
+                      <div key={key} className="flex justify-between items-start gap-4">
+                        <span className="text-sm text-muted-foreground capitalize flex-shrink-0">{key}</span>
+                        {isOwner && inn ? (
+                          <button
+                            onClick={() => handleOwnerClick(String(value))}
+                            className="text-sm font-medium text-primary hover:underline text-right break-words flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>{value}</span>
+                            <Icon name="ExternalLink" size={14} />
+                          </button>
+                        ) : (
+                          <span className="text-sm font-medium text-foreground text-right break-words">{value}</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </Card>
               </div>
 

@@ -175,7 +175,8 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
         return;
       }
       
-      handleAttributeChange(templateName, data.name || '');
+      const displayName = data.name ? `${data.name}, ИНН ${inn}` : inn;
+      handleAttributeChange(templateName, displayName);
       toast.success('Правообладатель сохранён в базу!');
       setInnInput('');
     } catch (error) {
