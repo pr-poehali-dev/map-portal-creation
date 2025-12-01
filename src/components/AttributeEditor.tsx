@@ -10,6 +10,7 @@ import { PolygonObject } from '@/types/polygon';
 import { useAuth } from '@/contexts/AuthContext';
 import { analyzeWithAI } from '@/services/ai';
 import { toast } from 'sonner';
+import func2url from '../../backend/func2url.json';
 
 interface AttributeTemplate {
   id: number;
@@ -35,6 +36,8 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
   const [templates, setTemplates] = useState<AttributeTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoadingDadata, setIsLoadingDadata] = useState(false);
+  const [innInput, setInnInput] = useState('');
 
   useEffect(() => {
     setEditedObject(object);
@@ -155,6 +158,33 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
     }
   };
 
+  const fetchCompanyDataByInn = async (inn: string, templateName: string) => {
+    if (!inn || inn.length < 10) {
+      toast.error('ИНН должен содержать 10 или 12 цифр');
+      return;
+    }
+    
+    setIsLoadingDadata(true);
+    
+    try {
+      const response = await fetch(`${func2url.dadata}?inn=${inn}`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        toast.error(data.error || 'Ошибка получения данных');
+        return;
+      }
+      
+      handleAttributeChange(templateName, data.name || '');
+      toast.success('Данные правообладателя загружены!');
+      setInnInput('');
+    } catch (error) {
+      toast.error('Ошибка подключения к сервису');
+    } finally {
+      setIsLoadingDadata(false);
+    }
+  };
+
   const renderField = (template: AttributeTemplate) => {
     const attributeKey = Object.keys(editedObject.attributes).find(
       key => key.toLowerCase() === template.name.toLowerCase()
@@ -164,6 +194,42 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
 
     switch (template.field_type) {
       case 'text':
+        if (template.name.toLowerCase() === 'правообладатель') {
+          return (
+            <div className="space-y-2">
+              <Input
+                value={value}
+                onChange={(e) => handleAttributeChange(template.name, e.target.value)}
+                placeholder={template.default_value || `Введите ${template.name.toLowerCase()}`}
+              />
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <Label className="text-xs text-muted-foreground">Поиск по ИНН</Label>
+                  <Input
+                    value={innInput}
+                    onChange={(e) => setInnInput(e.target.value)}
+                    placeholder="10 или 12 цифр"
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchCompanyDataByInn(innInput, template.name)}
+                  disabled={isLoadingDadata || !innInput || innInput.length < 10}
+                  className="h-8"
+                >
+                  {isLoadingDadata ? (
+                    <Icon name="Loader2" size={14} className="animate-spin" />
+                  ) : (
+                    <Icon name="Search" size={14} />
+                  )}
+                </Button>
+              </div>
+            </div>
+          );
+        }
         return (
           <Input
             value={value}
