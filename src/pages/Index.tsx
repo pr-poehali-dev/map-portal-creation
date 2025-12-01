@@ -94,7 +94,14 @@ export default function Index() {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           item.type.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterType === 'Все' || item.type === filterType;
-    const matchesSegment = segmentVisibility[item.segment];
+    
+    // Support multiple segments: check if any segment from object matches visible segments
+    const objectSegments = item.attributes?.['Сегмент'] || item.attributes?.['сегмент'] || item.segment;
+    const segmentList = typeof objectSegments === 'string' 
+      ? objectSegments.split(',').map(s => s.trim()) 
+      : [objectSegments];
+    
+    const matchesSegment = segmentList.some(seg => segmentVisibility[seg] || segmentVisibility[item.segment]);
     
     const ownerName = item.attributes?.['Правообладатель'] || item.attributes?.['правообладатель'] || '';
     const matchesOwner = filterOwner === 'Все' || ownerName === filterOwner;
