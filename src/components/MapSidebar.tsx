@@ -79,6 +79,19 @@ export default function MapSidebar({
 }: MapSidebarProps) {
   const [showAIBadge, setShowAIBadge] = useState(true);
 
+  const getOwnerStats = (ownerName: string) => {
+    if (ownerName === 'Все') return { count: polygonData.length, totalArea: 0 };
+    
+    const ownerPolygons = polygonData.filter(p => {
+      const owner = p.attributes?.['Правообладатель'] || p.attributes?.['правообладатель'];
+      return owner === ownerName;
+    });
+    
+    const totalArea = ownerPolygons.reduce((sum, p) => sum + (p.area || 0), 0);
+    
+    return { count: ownerPolygons.length, totalArea };
+  };
+
   useEffect(() => {
     if (viewingTrash && user?.role === 'admin') {
       loadTrash();
@@ -208,18 +221,47 @@ export default function MapSidebar({
                   <Icon name="Building2" size={12} className="inline mr-1" />
                   Правообладатель
                 </Label>
-                <div className="flex flex-wrap gap-2">
-                  {owners.map(owner => (
-                    <Badge
-                      key={owner}
-                      variant={filterOwner === owner ? "default" : "outline"}
-                      className="cursor-pointer hover:scale-105 transition-transform text-xs"
-                      onClick={() => setFilterOwner(owner)}
-                    >
-                      {owner}
-                    </Badge>
-                  ))}
-                </div>
+                <ScrollArea className="max-h-[200px]">
+                  <div className="flex flex-col gap-2 pr-3">
+                    {owners.map(owner => {
+                      const stats = getOwnerStats(owner);
+                      return (
+                        <div
+                          key={owner}
+                          className={`p-2 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                            filterOwner === owner 
+                              ? 'bg-primary/10 border-primary' 
+                              : 'bg-sidebar-accent border-sidebar-border hover:border-primary/50'
+                          }`}
+                          onClick={() => setFilterOwner(owner)}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-sidebar-foreground truncate">
+                                {owner}
+                              </div>
+                              <div className="flex items-center gap-3 mt-1">
+                                <div className="flex items-center gap-1 text-xs text-sidebar-foreground/60">
+                                  <Icon name="Map" size={12} />
+                                  <span>{stats.count} уч.</span>
+                                </div>
+                                {stats.totalArea > 0 && (
+                                  <div className="flex items-center gap-1 text-xs text-sidebar-foreground/60">
+                                    <Icon name="Ruler" size={12} />
+                                    <span>{stats.totalArea.toFixed(2)} га</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            {filterOwner === owner && (
+                              <Icon name="Check" size={16} className="text-primary flex-shrink-0" />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
               </div>
             )}
           </div>
