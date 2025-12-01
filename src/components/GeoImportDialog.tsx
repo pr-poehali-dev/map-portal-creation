@@ -117,7 +117,7 @@ export default function GeoImportDialog({ open, onOpenChange, onImport }: GeoImp
           status: properties.status || 'Импортирован',
           coordinates: normalizedRings.length === 1 ? normalizedRings[0] : normalizedRings,
           color: color,
-          layer: 'Импортированные данные',
+          segment: 'Импортированные данные',
           visible: true,
           attributes: {
             ...properties,

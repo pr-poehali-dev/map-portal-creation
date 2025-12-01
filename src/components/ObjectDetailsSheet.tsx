@@ -145,8 +145,10 @@ export default function ObjectDetailsSheet({
                 <Label className="text-sm font-semibold mb-3 block">Основная информация</Label>
                 <Card className="p-4 space-y-3">
                   <div className="flex justify-between items-center gap-4">
-                    <span className="text-sm text-muted-foreground flex-shrink-0">Слой</span>
-                    <span className="text-sm font-medium text-foreground text-right break-words">{selectedObject.layer}</span>
+                    <span className="text-sm text-muted-foreground flex-shrink-0">Сегмент</span>
+                    <span className="text-sm font-medium text-foreground text-right break-words">
+                      {selectedObject.attributes?.['Сегмент'] || selectedObject.attributes?.['сегмент'] || selectedObject.segment || 'Не указан'}
+                    </span>
                   </div>
                   <div className="flex justify-between items-start gap-4">
                     <span className="text-sm text-muted-foreground flex-shrink-0">ID объекта</span>

@@ -277,7 +277,7 @@ export function useMapHandlers({
           status: 'Активный',
           coordinates: coords,
           color: '#F59E0B',
-          layer: 'Кадастровые участки',
+          segment: 'Кадастровые участки',
           visible: true,
           attributes: {
             'Кадастровый номер': parcelData.cadastralNumber,
@@ -289,7 +289,7 @@ export function useMapHandlers({
       await Promise.all(newPolygons.map(polygon => polygonApi.create(polygon)));
       await loadPolygons();
 
-      setLayerVisibility(prev => ({
+      setSegmentVisibility(prev => ({
         ...prev,
         'Кадастровые участки': true
       }));

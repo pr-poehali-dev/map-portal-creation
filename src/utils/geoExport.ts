@@ -20,7 +20,7 @@ export const convertToGeoJSON = (polygons: PolygonObject[]) => {
         population: polygon.population,
         status: polygon.status,
         color: polygon.color,
-        layer: polygon.layer,
+        segment: polygon.segment,
         ...polygon.attributes
       },
       geometry: {
