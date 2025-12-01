@@ -180,18 +180,18 @@ export default function AdminAttributesTab({
                       </Button>
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium">{attr.name}</TableCell>
-                  <TableCell>
+                  <TableCell className="font-medium text-foreground">{attr.name}</TableCell>
+                  <TableCell className="text-foreground">
                     {fieldTypes.find(t => t.value === attr.field_type)?.label}
                   </TableCell>
                   <TableCell>
                     {attr.is_required ? (
-                      <span className="text-red-600">Да</span>
+                      <span className="text-red-400">Да</span>
                     ) : (
-                      <span className="text-muted-foreground">Нет</span>
+                      <span className="text-foreground/60">Нет</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
+                  <TableCell className="text-sm text-foreground/60">
                     {attr.default_value || '—'}
                   </TableCell>
                   <TableCell className="text-right">
