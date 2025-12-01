@@ -70,7 +70,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         # Выполняем запрос к PKK5
         print(f'[DEBUG] Requesting: {pkk_search_url}')
-        with urllib.request.urlopen(req, timeout=15, context=ssl_context) as response:
+        with urllib.request.urlopen(req, timeout=30, context=ssl_context) as response:
             response_text = response.read().decode('utf-8')
             print(f'[DEBUG] Response status: {response.status}')
             data = json.loads(response_text)
@@ -114,7 +114,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             )
             
-            with urllib.request.urlopen(geom_req, timeout=15, context=ssl_context) as geom_response:
+            with urllib.request.urlopen(geom_req, timeout=30, context=ssl_context) as geom_response:
                 geom_data = json.loads(geom_response.read().decode('utf-8'))
                 geometry = geom_data.get('geometry', {})
                 
@@ -172,7 +172,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'error': error_msg}, ensure_ascii=False)
         }
     
-    except Exception as e:
+    except urllib.error.URLError as e:
+        print(f'[ERROR] URLError: {str(e)}')
         return {
             'statusCode': 500,
             'headers': {
@@ -180,5 +181,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Content-Type': 'application/json'
             },
             'isBase64Encoded': False,
-            'body': json.dumps({'error': f'Ошибка: {str(e)}'})
+            'body': json.dumps({'error': 'Таймаут при запросе к ПКК. API Росреестра временно недоступен.'}, ensure_ascii=False)
+        }
+    
+    except Exception as e:
+        print(f'[ERROR] Exception: {str(e)}')
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Access-Control-Allow-Origin': '*',
+                'Content-Type': 'application/json'
+            },
+            'isBase64Encoded': False,
+            'body': json.dumps({'error': f'Ошибка: {str(e)}'}, ensure_ascii=False)
         }
