@@ -234,6 +234,23 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
             </div>
           )}
 
+          <div className="space-y-2">
+            <Label>Сегмент</Label>
+            <AttributeFieldRenderer
+              template={{
+                id: -1,
+                name: 'Сегмент',
+                field_type: 'select',
+                is_required: false,
+                options: '',
+                sort_order: -1
+              }}
+              value={editedObject.segment || ''}
+              onChange={(val) => setEditedObject(prev => ({ ...prev, segment: val }))}
+              beneficiaries={[]}
+            />
+          </div>
+
           {otherTemplates.map(template => {
             const attributeKey = Object.keys(editedObject.attributes).find(
               key => key.toLowerCase() === template.name.toLowerCase()
