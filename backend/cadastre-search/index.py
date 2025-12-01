@@ -1,6 +1,7 @@
 import json
 import urllib.request
 import urllib.error
+import ssl
 from typing import Dict, Any
 
 def normalize_cadastral_number(cn: str) -> str:
@@ -63,6 +64,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     # Step 1: Search for cadastral object to get its ID
     search_url = f'https://pkk.rosreestr.ru/api/features/1?text={normalized_cn}'
     
+    # Create SSL context that doesn't verify certificates
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+    
     try:
         req = urllib.request.Request(
             search_url,
@@ -72,7 +78,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         )
         
-        with urllib.request.urlopen(req, timeout=15) as response:
+        with urllib.request.urlopen(req, timeout=15, context=ssl_context) as response:
             search_data = json.loads(response.read().decode('utf-8'))
         
         if not search_data.get('features'):
@@ -100,7 +106,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         )
         
-        with urllib.request.urlopen(req, timeout=15) as response:
+        with urllib.request.urlopen(req, timeout=15, context=ssl_context) as response:
             detail_data = json.loads(response.read().decode('utf-8'))
         
         feature = detail_data.get('feature', {})
