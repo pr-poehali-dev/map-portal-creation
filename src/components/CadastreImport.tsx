@@ -39,14 +39,14 @@ export default function CadastreImport({ userId, onSuccess }: CadastreImportProp
         throw new Error(data.error || 'Ошибка загрузки данных');
       }
       
-      // Получаем геометрию из backend ответа (raw_feature содержит полные данные)
-      const geometry = data.raw_feature?.geometry;
+      // Получаем геометрию из backend ответа
+      const geometry = data.geometry;
       
-      if (!geometry) {
+      if (!geometry || !geometry.coordinates) {
         throw new Error('Геометрия участка недоступна');
       }
       
-      // Конвертируем координаты из GeoJSON в формат приложения [lat, lon]
+      // Конвертируем координаты из GeoJSON [lon, lat] в формат приложения [lat, lon]
       let coordinates: [number, number][] = [];
       
       if (geometry.type === 'Polygon' && geometry.coordinates?.[0]) {
