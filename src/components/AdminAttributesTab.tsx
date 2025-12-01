@@ -120,7 +120,8 @@ export default function AdminAttributesTab({
     { value: 'number', label: 'Число' },
     { value: 'select', label: 'Выпадающий список' },
     { value: 'date', label: 'Дата' },
-    { value: 'checkbox', label: 'Флажок' }
+    { value: 'checkbox', label: 'Флажок' },
+    { value: 'conditional_dates', label: 'Условные даты (статус + период)' }
   ];
 
   return (

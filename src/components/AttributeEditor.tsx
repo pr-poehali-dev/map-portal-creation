@@ -234,6 +234,55 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
           </div>
         );
 
+      case 'conditional_dates': {
+        const statusOptions = template.options ? template.options.split(',').map(o => o.trim()) : [];
+        const conditionalValue = typeof value === 'object' ? value : { status: '', dateFrom: '', dateTo: '' };
+        
+        return (
+          <div className="space-y-3">
+            <Select
+              value={conditionalValue.status || ''}
+              onValueChange={(val) => handleAttributeChange(template.name, { ...conditionalValue, status: val })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите статус" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map(option => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {conditionalValue.status && (
+              <div className="space-y-2">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Дата ОТ</Label>
+                  <Input
+                    type="date"
+                    value={conditionalValue.dateFrom || ''}
+                    onChange={(e) => handleAttributeChange(template.name, { ...conditionalValue, dateFrom: e.target.value })}
+                  />
+                </div>
+                
+                {conditionalValue.status === 'Аренда' && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Дата ДО</Label>
+                    <Input
+                      type="date"
+                      value={conditionalValue.dateTo || ''}
+                      onChange={(e) => handleAttributeChange(template.name, { ...conditionalValue, dateTo: e.target.value })}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      }
+
       default:
         return (
           <Input
