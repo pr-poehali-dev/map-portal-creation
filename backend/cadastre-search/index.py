@@ -50,43 +50,33 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'error': 'Кадастровый номер не указан'})
         }
     
-    # НСПД Geoportal API для поиска участка (thematicSearchId=1 для земельных участков)
-    nspd_search_url = f'https://nspd.gov.ru/api/geoportal/v2/search/geoportal'
+    # PKK5 Rosreestr API для поиска участка
+    pkk_search_url = f'https://pkk5.rosreestr.ru/api/features/1/{cadastral_number}'
     
     # Создаём SSL контекст
     ssl_context = ssl.create_default_context()
     ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_NONE
     
-    # Параметры поиска
-    search_params = {
-        'thematicSearchId': '1',
-        'query': cadastral_number
-    }
-    
-    search_url_with_params = f"{nspd_search_url}?{'&'.join([f'{k}={v}' for k, v in search_params.items()])}"
-    
     req = urllib.request.Request(
-        search_url_with_params,
+        pkk_search_url,
         headers={
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'application/json, text/plain, */*',
-            'Accept-Language': 'ru-RU,ru;q=0.9',
-            'Referer': 'https://nspd.gov.ru/'
+            'Accept': 'application/json',
+            'Referer': 'https://pkk5.rosreestr.ru/'
         }
     )
     
     try:
-        # Выполняем поиск
-        print(f'[DEBUG] Requesting: {search_url_with_params}')
+        # Выполняем запрос к PKK5
+        print(f'[DEBUG] Requesting: {pkk_search_url}')
         with urllib.request.urlopen(req, timeout=15, context=ssl_context) as response:
             response_text = response.read().decode('utf-8')
             print(f'[DEBUG] Response status: {response.status}')
-            print(f'[DEBUG] Response body: {response_text[:500]}...')
-            search_data = json.loads(response_text)
+            data = json.loads(response_text)
             
-            # Geoportal API возвращает массив results
-            if not search_data or not isinstance(search_data, dict):
+            # PKK5 возвращает объект с feature
+            if not data or 'feature' not in data:
                 return {
                     'statusCode': 404,
                     'headers': {
@@ -94,11 +84,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'Content-Type': 'application/json'
                     },
                     'isBase64Encoded': False,
-                    'body': json.dumps({'error': 'Участок не найден в НСПД'})
+                    'body': json.dumps({'error': 'Участок не найден в ПКК'})
                 }
             
-            results = search_data.get('results', [])
-            if not results or len(results) == 0:
+            feature = data['feature']
+            attrs = feature.get('attrs', {})
+            
+            # Получаем extent для запроса геометрии
+            extent = feature.get('extent')
+            if not extent:
                 return {
                     'statusCode': 404,
                     'headers': {
@@ -106,42 +100,23 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'Content-Type': 'application/json'
                     },
                     'isBase64Encoded': False,
-                    'body': json.dumps({'error': 'Участок не найден в НСПД'})
+                    'body': json.dumps({'error': 'Координаты участка недоступны'})
                 }
             
-            # Первый результат
-            item = results[0]
-            
-            # Получаем ID объекта для запроса детальной информации
-            object_id = item.get('id')
-            if not object_id:
-                return {
-                    'statusCode': 404,
-                    'headers': {
-                        'Access-Control-Allow-Origin': '*',
-                        'Content-Type': 'application/json'
-                    },
-                    'isBase64Encoded': False,
-                    'body': json.dumps({'error': 'ID объекта не найден'})
-                }
-            
-            # Запрашиваем полную информацию об объекте включая геометрию
-            detail_url = f'https://nspd.gov.ru/api/geoportal/v2/features/{object_id}'
-            detail_req = urllib.request.Request(
-                detail_url,
+            # Запрашиваем геометрию
+            geom_url = f'https://pkk5.rosreestr.ru/api/features/1/{cadastral_number}/geometry'
+            geom_req = urllib.request.Request(
+                geom_url,
                 headers={
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'Accept': 'application/json, text/plain, */*',
-                    'Accept-Language': 'ru-RU,ru;q=0.9',
-                    'Referer': 'https://nspd.gov.ru/'
+                    'Accept': 'application/json',
+                    'Referer': 'https://pkk5.rosreestr.ru/'
                 }
             )
             
-            with urllib.request.urlopen(detail_req, timeout=15, context=ssl_context) as detail_response:
-                detail_data = json.loads(detail_response.read().decode('utf-8'))
-                
-                props = detail_data.get('properties', {})
-                geometry = detail_data.get('geometry', {})
+            with urllib.request.urlopen(geom_req, timeout=15, context=ssl_context) as geom_response:
+                geom_data = json.loads(geom_response.read().decode('utf-8'))
+                geometry = geom_data.get('geometry', {})
                 
                 if not geometry:
                     return {
@@ -154,18 +129,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'body': json.dumps({'error': 'Геометрия участка недоступна'})
                     }
                 
-                # Формируем ответ
+                # Формируем ответ из attrs PKK5
                 result = {
                     'cadastral_number': cadastral_number,
-                    'area': props.get('area'),
-                    'category': props.get('category'),
-                    'permitted_use': props.get('utilization') or props.get('permitted_use'),
-                    'address': props.get('address') or props.get('location'),
-                    'cost': props.get('cadastral_cost') or props.get('cost'),
-                    'date': props.get('date_create') or props.get('date'),
+                    'area': attrs.get('area_value'),
+                    'category': attrs.get('category_type'),
+                    'permitted_use': attrs.get('util_by_doc'),
+                    'address': attrs.get('address'),
+                    'cost': attrs.get('cad_cost'),
+                    'date': attrs.get('date_create'),
                     'geometry': geometry,
-                    'center': props.get('center'),
-                    'raw_properties': props
+                    'center': extent,
+                    'raw_properties': attrs
                 }
                 
                 return {
