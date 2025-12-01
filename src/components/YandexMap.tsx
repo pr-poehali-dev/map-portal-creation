@@ -103,10 +103,10 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
         },
         {
           fillColor: polygon.color,
-          fillOpacity: isSelected ? opacity * 0.8 : opacity * 0.5,
+          fillOpacity: 0.8,
           strokeColor: polygon.color,
-          strokeWidth: isSelected ? 3 : 2,
-          strokeOpacity: opacity
+          strokeWidth: 2,
+          strokeOpacity: 0
         }
       );
 

@@ -159,7 +159,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     }
                 
                 if result['user_id'] != user_id:
-                    if not check_permission(cur, user_id, 'layer', result['layer'], 'read'):
+                    segment_name = result.get('segment') or result.get('layer', '')
+                    if not check_permission(cur, user_id, 'layer', segment_name, 'read'):
                         return {
                             'statusCode': 403,
                             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
@@ -178,6 +179,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps(dict(result), default=json_serializer)
                 }
             else:
+                cur.execute("SELECT id, name, color FROM segments")
+                segments = cur.fetchall()
+                segment_colors = {seg['name']: seg['color'] for seg in segments}
+                
                 cur.execute("SELECT * FROM polygon_objects ORDER BY created_at DESC")
                 all_results = cur.fetchall()
                 
@@ -188,9 +193,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 filtered_results = []
                 for row in all_results:
                     if row['user_id'] == user_id or row['user_id'] is None:
-                        filtered_results.append(dict(row))
-                    elif check_permission(cur, user_id, 'layer', row['layer'], 'read'):
-                        filtered_results.append(dict(row))
+                        polygon_dict = dict(row)
+                        if polygon_dict.get('segment') and polygon_dict['segment'] in segment_colors:
+                            polygon_dict['color'] = segment_colors[polygon_dict['segment']]
+                        filtered_results.append(polygon_dict)
+                    else:
+                        segment_name = row.get('segment') or row.get('layer', '')
+                        if check_permission(cur, user_id, 'layer', segment_name, 'read'):
+                            polygon_dict = dict(row)
+                            if polygon_dict.get('segment') and polygon_dict['segment'] in segment_colors:
+                                polygon_dict['color'] = segment_colors[polygon_dict['segment']]
+                            filtered_results.append(polygon_dict)
                 
                 print(f"DEBUG: Filtered polygons: {len(filtered_results)}")
                 
@@ -274,19 +287,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps(dict(restored), default=json_serializer)
                 }
             
-            layer = body['layer']
+            segment = body.get('segment') or body.get('layer', '')
             
-            if not check_permission(cur, user_id, 'layer', layer, 'write'):
+            if not check_permission(cur, user_id, 'layer', segment, 'write'):
                 return {
                     'statusCode': 403,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'error': 'No permission to create objects in this layer'})
+                    'body': json.dumps({'error': 'No permission to create objects in this segment'})
                 }
             
             print(f"DEBUG: Creating polygon with data: id={body['id']}, name={body['name']}, area={body['area']}, type={body['type']}")
             
             sql_query = (
-                "INSERT INTO polygon_objects (id, name, type, area, population, status, coordinates, color, layer, visible, attributes, user_id) "
+                "INSERT INTO polygon_objects (id, name, type, area, population, status, coordinates, color, segment, visible, attributes, user_id) "
                 "VALUES ('" + body['id'].replace("'", "''") + "', "
                 "'" + body['name'].replace("'", "''") + "', "
                 "'" + body['type'].replace("'", "''") + "', "
@@ -295,7 +308,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "" + ("'" + body['status'].replace("'", "''") + "'" if body.get('status') else 'NULL') + ", "
                 "'" + json.dumps(body['coordinates']).replace("'", "''") + "', "
                 "'" + body['color'].replace("'", "''") + "', "
-                "'" + body['layer'].replace("'", "''") + "', "
+                "'" + segment.replace("'", "''") + "', "
                 "" + str(body.get('visible', True)).lower() + ", "
                 "'" + json.dumps(body.get('attributes', {})).replace("'", "''") + "', "
                 "'" + user_id.replace("'", "''") + "') "
@@ -326,7 +339,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             cur.execute(
-                "SELECT user_id, layer FROM polygon_objects WHERE id = '" + polygon_id.replace("'", "''") + "'"
+                "SELECT user_id, segment FROM polygon_objects WHERE id = '" + polygon_id.replace("'", "''") + "'"
             )
             existing = cur.fetchone()
             
@@ -338,7 +351,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             if existing['user_id'] != user_id:
-                if not check_permission(cur, user_id, 'layer', existing['layer'], 'write'):
+                segment_name = existing.get('segment', '')
+                if not check_permission(cur, user_id, 'layer', segment_name, 'write'):
                     return {
                         'statusCode': 403,
                         'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
@@ -346,6 +360,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     }
             
             body = json.loads(event.get('body', '{}'))
+            segment = body.get('segment') or body.get('layer', '')
             
             cur.execute(
                 "UPDATE polygon_objects SET "
@@ -356,7 +371,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "status = '" + body['status'].replace("'", "''") + "', "
                 "coordinates = '" + json.dumps(body['coordinates']).replace("'", "''") + "', "
                 "color = '" + body['color'].replace("'", "''") + "', "
-                "layer = '" + body['layer'].replace("'", "''") + "', "
+                "segment = '" + segment.replace("'", "''") + "', "
                 "visible = " + str(body.get('visible', True)).lower() + ", "
                 "attributes = '" + json.dumps(body.get('attributes', {})).replace("'", "''") + "', "
                 "updated_at = CURRENT_TIMESTAMP "
