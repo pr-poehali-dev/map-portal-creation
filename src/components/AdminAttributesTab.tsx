@@ -270,6 +270,14 @@ export default function AdminAttributesTab({
                 <p className="text-xs text-muted-foreground mt-1">
                   Перечислите варианты через запятую
                 </p>
+                {formData.name.toLowerCase() === 'сегмент' && (
+                  <div className="mt-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <p className="text-xs text-blue-400 flex items-center gap-2">
+                      <Icon name="Info" size={14} />
+                      Для поля "Сегмент" варианты загружаются из вкладки "Сегменты". Вы можете оставить это поле пустым.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 

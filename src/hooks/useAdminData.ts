@@ -70,6 +70,13 @@ export interface Beneficiary {
   updated_at: string;
 }
 
+export interface Segment {
+  id: number;
+  name: string;
+  color: string;
+  order_index: number;
+}
+
 export function useAdminData() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -82,6 +89,7 @@ export function useAdminData() {
   const [layers, setLayers] = useState<any[]>([]);
   const [attributes, setAttributes] = useState<AttributeTemplate[]>([]);
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
+  const [segments, setSegments] = useState<Segment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const getAuthHeaders = () => ({
@@ -89,17 +97,20 @@ export function useAdminData() {
     'X-User-Id': user?.token || ''
   });
 
+  const SEGMENTS_API = 'https://functions.poehali.dev/a81ed165-eee8-42a9-aa73-c1f66b3a7de4';
+
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [usersRes, companiesRes, permsRes, auditRes, layersRes, attributesRes, beneficiariesRes] = await Promise.all([
+      const [usersRes, companiesRes, permsRes, auditRes, layersRes, attributesRes, beneficiariesRes, segmentsRes] = await Promise.all([
         fetch(`${ADMIN_API}?action=users`, { headers: getAuthHeaders() }),
         fetch(`${ADMIN_API}?action=companies`, { headers: getAuthHeaders() }),
         fetch(`${ADMIN_API}?action=permissions`, { headers: getAuthHeaders() }),
         fetch(`${ADMIN_API}?action=audit&limit=50`, { headers: getAuthHeaders() }),
         fetch(`${ADMIN_API}?action=layers`, { headers: getAuthHeaders() }),
         fetch(`${ADMIN_API}?action=attributes`, { headers: getAuthHeaders() }),
-        fetch(`${ADMIN_API}?action=beneficiaries`, { headers: getAuthHeaders() })
+        fetch(`${ADMIN_API}?action=beneficiaries`, { headers: getAuthHeaders() }),
+        fetch(SEGMENTS_API, { headers: getAuthHeaders() })
       ]);
 
       if (!usersRes.ok) {
@@ -115,14 +126,15 @@ export function useAdminData() {
         throw new Error('Failed to load data');
       }
 
-      const [usersData, companiesData, permsData, auditData, layersData, attributesData, beneficiariesData] = await Promise.all([
+      const [usersData, companiesData, permsData, auditData, layersData, attributesData, beneficiariesData, segmentsData] = await Promise.all([
         usersRes.json(),
         companiesRes.json(),
         permsRes.json(),
         auditRes.json(),
         layersRes.json(),
         attributesRes.json(),
-        beneficiariesRes.json()
+        beneficiariesRes.json(),
+        segmentsRes.json()
       ]);
 
       setUsers(usersData);
@@ -132,6 +144,7 @@ export function useAdminData() {
       setLayers(layersData);
       setAttributes(attributesData);
       setBeneficiaries(beneficiariesData);
+      setSegments(segmentsData);
     } catch (error) {
       toast({
         title: 'Ошибка загрузки',
@@ -155,11 +168,13 @@ export function useAdminData() {
     layers,
     attributes,
     beneficiaries,
+    segments,
     isLoading,
     loadData,
     getAuthHeaders,
     setAttributes,
     setBeneficiaries,
-    ADMIN_API
+    ADMIN_API,
+    SEGMENTS_API
   };
 }

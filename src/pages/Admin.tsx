@@ -8,12 +8,14 @@ import AdminPermissionsTab from '@/components/AdminPermissionsTab';
 import AdminAuditTab from '@/components/AdminAuditTab';
 import AdminAttributesTab from '@/components/AdminAttributesTab';
 import AdminBeneficiariesTab from '@/components/AdminBeneficiariesTab';
+import AdminSegmentsTab from '@/components/AdminSegmentsTab';
 import { useAdminData } from '@/hooks/useAdminData';
 import { useUserManagement } from '@/hooks/useUserManagement';
 import { useCompanyManagement } from '@/hooks/useCompanyManagement';
 import { usePermissionManagement } from '@/hooks/usePermissionManagement';
 import { useAttributeManagement } from '@/hooks/useAttributeManagement';
 import { useBeneficiaryManagement } from '@/hooks/useBeneficiaryManagement';
+import { useSegmentManagement } from '@/hooks/useSegmentManagement';
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -26,11 +28,13 @@ export default function Admin() {
     layers,
     attributes,
     beneficiaries,
+    segments,
     isLoading,
     loadData,
     getAuthHeaders,
     setAttributes,
-    ADMIN_API
+    ADMIN_API,
+    SEGMENTS_API
   } = useAdminData();
 
   const { updateRole, updateStatus } = useUserManagement(ADMIN_API, getAuthHeaders, loadData);
@@ -70,6 +74,13 @@ export default function Admin() {
     removeBeneficiary
   } = useBeneficiaryManagement(ADMIN_API, getAuthHeaders, loadData);
 
+  const {
+    createSegment,
+    updateSegment,
+    deleteSegment,
+    reorderSegments
+  } = useSegmentManagement(SEGMENTS_API, getAuthHeaders, loadData);
+
   return (
     <div className="min-h-screen bg-background p-8 dark">
       <div className="max-w-7xl mx-auto">
@@ -90,7 +101,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="users">
               <Icon name="Users" size={16} className="mr-2" />
               Пользователи
@@ -114,6 +125,10 @@ export default function Admin() {
             <TabsTrigger value="beneficiaries">
               <Icon name="Users" size={16} className="mr-2" />
               Бенефициары
+            </TabsTrigger>
+            <TabsTrigger value="segments">
+              <Icon name="Layers" size={16} className="mr-2" />
+              Сегменты
             </TabsTrigger>
           </TabsList>
 
@@ -181,6 +196,16 @@ export default function Admin() {
               beneficiaries={beneficiaries.map(b => b.name)}
               onAdd={addBeneficiary}
               onRemove={removeBeneficiary}
+            />
+          </TabsContent>
+
+          <TabsContent value="segments">
+            <AdminSegmentsTab
+              segments={segments}
+              onCreateSegment={createSegment}
+              onUpdateSegment={updateSegment}
+              onDeleteSegment={deleteSegment}
+              onReorderSegments={reorderSegments}
             />
           </TabsContent>
         </Tabs>
