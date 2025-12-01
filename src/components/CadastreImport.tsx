@@ -39,17 +39,14 @@ export default function CadastreImport({ userId, onSuccess }: CadastreImportProp
         throw new Error(data.error || 'Ошибка загрузки данных');
       }
       
-      // Получаем детальную геометрию
-      const geometryUrl = `https://pkk.rosreestr.ru/api/features/1/${cadastralNumber.trim()}`;
-      const geoResponse = await fetch(geometryUrl);
-      const geoData = await geoResponse.json();
+      // Получаем геометрию из backend ответа (raw_feature содержит полные данные)
+      const geometry = data.raw_feature?.geometry;
       
-      if (!geoData?.feature?.geometry) {
+      if (!geometry) {
         throw new Error('Геометрия участка недоступна');
       }
       
-      // Конвертируем координаты из GeoJSON в формат приложения
-      const geometry = geoData.feature.geometry;
+      // Конвертируем координаты из GeoJSON в формат приложения [lat, lon]
       let coordinates: [number, number][] = [];
       
       if (geometry.type === 'Polygon' && geometry.coordinates?.[0]) {
