@@ -50,8 +50,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'error': 'Кадастровый номер не указан'})
         }
     
-    # НСПД Геопортал API v3
-    api_url = f'https://nspd.gov.ru/api/geoportal/v3/search/geoportal?thematicSearchId=1&query={cadastral_number}&CRS=EPSG:4326'
+    # НСПД Геопортал API v4
+    api_url = f'https://nspd.gov.ru/api/geoportal/v4/search/geoportal?thematicSearchId=1&query={cadastral_number}&CRS=EPSG:4326'
     
     # Create SSL context that doesn't verify certificates
     ssl_context = ssl.create_default_context()
