@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Autocomplete } from '@/components/ui/autocomplete';
 import Icon from '@/components/ui/icon';
 import { PolygonObject } from '@/types/polygon';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,10 +39,12 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoadingDadata, setIsLoadingDadata] = useState(false);
   const [innInput, setInnInput] = useState('');
+  const [beneficiaries, setBeneficiaries] = useState<string[]>([]);
 
   useEffect(() => {
     setEditedObject(object);
     loadAttributeTemplates();
+    loadBeneficiaries();
   }, [object]);
 
   const loadAttributeTemplates = async () => {
@@ -71,6 +74,28 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
       console.error('Failed to load attribute templates', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadBeneficiaries = async () => {
+    try {
+      const response = await fetch(`${func2url.polygons}?action=list`, {
+        headers: { 'X-User-Id': user?.token || '' }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const uniqueBeneficiaries = Array.from(
+          new Set(
+            data
+              .map((p: any) => p.attributes?.['Бенефициар'] || p.attributes?.['бенефициар'])
+              .filter(Boolean)
+          )
+        ) as string[];
+        setBeneficiaries(uniqueBeneficiaries);
+      }
+    } catch (error) {
+      console.error('Failed to load beneficiaries', error);
     }
   };
 
@@ -195,6 +220,17 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
 
     switch (template.field_type) {
       case 'text':
+        if (template.name.toLowerCase() === 'бенефициар') {
+          return (
+            <Autocomplete
+              value={value}
+              onChange={(val) => handleAttributeChange(template.name, val)}
+              suggestions={beneficiaries}
+              placeholder={template.default_value || `Введите ${template.name.toLowerCase()}`}
+            />
+          );
+        }
+        
         if (template.name.toLowerCase() === 'правообладатель') {
           return (
             <div className="space-y-2">

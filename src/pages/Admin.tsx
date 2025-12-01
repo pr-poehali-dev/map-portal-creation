@@ -7,11 +7,13 @@ import AdminCompaniesTab from '@/components/AdminCompaniesTab';
 import AdminPermissionsTab from '@/components/AdminPermissionsTab';
 import AdminAuditTab from '@/components/AdminAuditTab';
 import AdminAttributesTab from '@/components/AdminAttributesTab';
+import AdminBeneficiariesTab from '@/components/AdminBeneficiariesTab';
 import { useAdminData } from '@/hooks/useAdminData';
 import { useUserManagement } from '@/hooks/useUserManagement';
 import { useCompanyManagement } from '@/hooks/useCompanyManagement';
 import { usePermissionManagement } from '@/hooks/usePermissionManagement';
 import { useAttributeManagement } from '@/hooks/useAttributeManagement';
+import { useBeneficiaryManagement } from '@/hooks/useBeneficiaryManagement';
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -23,6 +25,7 @@ export default function Admin() {
     auditLogs,
     layers,
     attributes,
+    beneficiaries,
     isLoading,
     loadData,
     getAuthHeaders,
@@ -62,6 +65,11 @@ export default function Admin() {
     reorderAttributes
   } = useAttributeManagement(ADMIN_API, getAuthHeaders, loadData, setAttributes);
 
+  const {
+    addBeneficiary,
+    removeBeneficiary
+  } = useBeneficiaryManagement(ADMIN_API, getAuthHeaders, loadData);
+
   return (
     <div className="min-h-screen bg-background p-8 dark">
       <div className="max-w-7xl mx-auto">
@@ -82,7 +90,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="users">
               <Icon name="Users" size={16} className="mr-2" />
               Пользователи
@@ -102,6 +110,10 @@ export default function Admin() {
             <TabsTrigger value="attributes">
               <Icon name="Settings" size={16} className="mr-2" />
               Атрибуты
+            </TabsTrigger>
+            <TabsTrigger value="beneficiaries">
+              <Icon name="Users" size={16} className="mr-2" />
+              Бенефициары
             </TabsTrigger>
           </TabsList>
 
@@ -161,6 +173,14 @@ export default function Admin() {
               onUpdateAttribute={updateAttribute}
               onDeleteAttribute={deleteAttribute}
               onReorderAttributes={reorderAttributes}
+            />
+          </TabsContent>
+
+          <TabsContent value="beneficiaries">
+            <AdminBeneficiariesTab
+              beneficiaries={beneficiaries.map(b => b.name)}
+              onAdd={addBeneficiary}
+              onRemove={removeBeneficiary}
             />
           </TabsContent>
         </Tabs>

@@ -125,6 +125,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     ''')
                     result = cur.fetchall()
                 
+                elif action == 'beneficiaries':
+                    cur.execute('''
+                        SELECT id, name, created_at, updated_at
+                        FROM t_p43707323_map_portal_creation.beneficiaries
+                        ORDER BY name
+                    ''')
+                    result = cur.fetchall()
+                
                 else:
                     conn.close()
                     return {
@@ -267,6 +275,60 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             "UPDATE t_p43707323_map_portal_creation.attribute_templates SET sort_order = %s WHERE id = %s",
                             (attr['sort_order'], attr['id'])
                         )
+                    conn.commit()
+                    result = {'success': True}
+                
+                elif action == 'create_beneficiary':
+                    name = body.get('name')
+                    if not name:
+                        conn.close()
+                        return {
+                            'statusCode': 400,
+                            'headers': {
+                                'Content-Type': 'application/json',
+                                'Access-Control-Allow-Origin': '*'
+                            },
+                            'body': json.dumps({'error': 'Name is required'})
+                        }
+                    
+                    cur.execute(
+                        "INSERT INTO t_p43707323_map_portal_creation.beneficiaries (name) VALUES (%s) RETURNING id",
+                        (name,)
+                    )
+                    new_id = cur.fetchone()[0]
+                    
+                    cur.execute(
+                        "INSERT INTO t_p43707323_map_portal_creation.audit_log (user_id, action, resource_type, resource_id, details) VALUES (%s, 'create', 'beneficiary', %s, %s)",
+                        (user_id, str(new_id), json.dumps({'name': name}))
+                    )
+                    conn.commit()
+                    result = {'success': True, 'id': new_id}
+                
+                elif action == 'delete_beneficiary':
+                    name = body.get('name')
+                    if not name:
+                        conn.close()
+                        return {
+                            'statusCode': 400,
+                            'headers': {
+                                'Content-Type': 'application/json',
+                                'Access-Control-Allow-Origin': '*'
+                            },
+                            'body': json.dumps({'error': 'Name is required'})
+                        }
+                    
+                    cur.execute(
+                        "DELETE FROM t_p43707323_map_portal_creation.beneficiaries WHERE name = %s RETURNING id",
+                        (name,)
+                    )
+                    deleted_id = cur.fetchone()
+                    
+                    if deleted_id:
+                        cur.execute(
+                            "INSERT INTO t_p43707323_map_portal_creation.audit_log (user_id, action, resource_type, resource_id, details) VALUES (%s, 'delete', 'beneficiary', %s, %s)",
+                            (user_id, str(deleted_id[0]), json.dumps({'name': name}))
+                        )
+                    
                     conn.commit()
                     result = {'success': True}
                 

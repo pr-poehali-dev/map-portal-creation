@@ -63,6 +63,13 @@ export interface AttributeTemplate {
   sort_order: number;
 }
 
+export interface Beneficiary {
+  id: number;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export function useAdminData() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -74,6 +81,7 @@ export function useAdminData() {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [layers, setLayers] = useState<any[]>([]);
   const [attributes, setAttributes] = useState<AttributeTemplate[]>([]);
+  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const getAuthHeaders = () => ({
@@ -84,13 +92,14 @@ export function useAdminData() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [usersRes, companiesRes, permsRes, auditRes, layersRes, attributesRes] = await Promise.all([
+      const [usersRes, companiesRes, permsRes, auditRes, layersRes, attributesRes, beneficiariesRes] = await Promise.all([
         fetch(`${ADMIN_API}?action=users`, { headers: getAuthHeaders() }),
         fetch(`${ADMIN_API}?action=companies`, { headers: getAuthHeaders() }),
         fetch(`${ADMIN_API}?action=permissions`, { headers: getAuthHeaders() }),
         fetch(`${ADMIN_API}?action=audit&limit=50`, { headers: getAuthHeaders() }),
         fetch(`${ADMIN_API}?action=layers`, { headers: getAuthHeaders() }),
-        fetch(`${ADMIN_API}?action=attributes`, { headers: getAuthHeaders() })
+        fetch(`${ADMIN_API}?action=attributes`, { headers: getAuthHeaders() }),
+        fetch(`${ADMIN_API}?action=beneficiaries`, { headers: getAuthHeaders() })
       ]);
 
       if (!usersRes.ok) {
@@ -106,13 +115,14 @@ export function useAdminData() {
         throw new Error('Failed to load data');
       }
 
-      const [usersData, companiesData, permsData, auditData, layersData, attributesData] = await Promise.all([
+      const [usersData, companiesData, permsData, auditData, layersData, attributesData, beneficiariesData] = await Promise.all([
         usersRes.json(),
         companiesRes.json(),
         permsRes.json(),
         auditRes.json(),
         layersRes.json(),
-        attributesRes.json()
+        attributesRes.json(),
+        beneficiariesRes.json()
       ]);
 
       setUsers(usersData);
@@ -121,6 +131,7 @@ export function useAdminData() {
       setAuditLogs(auditData);
       setLayers(layersData);
       setAttributes(attributesData);
+      setBeneficiaries(beneficiariesData);
     } catch (error) {
       toast({
         title: 'Ошибка загрузки',
@@ -143,10 +154,12 @@ export function useAdminData() {
     auditLogs,
     layers,
     attributes,
+    beneficiaries,
     isLoading,
     loadData,
     getAuthHeaders,
     setAttributes,
+    setBeneficiaries,
     ADMIN_API
   };
 }
