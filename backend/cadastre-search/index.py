@@ -55,11 +55,26 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     })
     
     try:
-        # Используем публичный API rosreestr.net
-        api_url = f'https://rosreestr.net/api/online/parcel/{cadastral_number}'
+        # Используем публичный API egrp365.org
+        api_url = f'https://egrp365.org/api/parcel/{cadastral_number}'
         
         print(f'[DEBUG] Requesting: {api_url}')
-        response = session.get(api_url, timeout=25, verify=False)
+        response = session.get(api_url, timeout=20, verify=True)
+        
+        print(f'[DEBUG] Status: {response.status_code}')
+        print(f'[DEBUG] Content-Type: {response.headers.get("Content-Type")}')
+        print(f'[DEBUG] Response text (first 300): {response.text[:300]}')
+        
+        if response.status_code == 404:
+            return {
+                'statusCode': 404,
+                'headers': {
+                    'Access-Control-Allow-Origin': '*',
+                    'Content-Type': 'application/json'
+                },
+                'isBase64Encoded': False,
+                'body': json.dumps({'error': 'Участок не найден'}, ensure_ascii=False)
+            }
         
         if response.status_code != 200:
             print(f'[ERROR] Status {response.status_code}: {response.text[:200]}')
@@ -74,9 +89,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         data = response.json()
-        print(f'[DEBUG] Response keys: {list(data.keys())}')
+        print(f'[DEBUG] Response keys: {list(data.keys()) if isinstance(data, dict) else "not a dict"}')
         
-        if not data or 'error' in data:
+        # Проверяем наличие координат
+        coords = data.get('coords') or data.get('coordinates') or []
+        
+        if not coords:
             return {
                 'statusCode': 404,
                 'headers': {
@@ -84,27 +102,23 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'Content-Type': 'application/json'
                 },
                 'isBase64Encoded': False,
-                'body': json.dumps({'error': 'Участок не найден'})
+                'body': json.dumps({'error': 'Координаты участка недоступны'}, ensure_ascii=False)
             }
         
-        # Получаем координаты
-        coordinates_raw = data.get('coordinates', [])
-        if not coordinates_raw:
-            return {
-                'statusCode': 404,
-                'headers': {
-                    'Access-Control-Allow-Origin': '*',
-                    'Content-Type': 'application/json'
-                },
-                'isBase64Encoded': False,
-                'body': json.dumps({'error': 'Координаты участка недоступны'})
-            }
-        
-        # Конвертируем координаты в GeoJSON формат
+        # Конвертируем координаты в GeoJSON
         coordinates = []
-        for coord in coordinates_raw:
-            if isinstance(coord, dict) and 'lat' in coord and 'lng' in coord:
-                coordinates.append([float(coord['lng']), float(coord['lat'])])
+        if isinstance(coords, list):
+            for coord in coords:
+                if isinstance(coord, (list, tuple)) and len(coord) >= 2:
+                    lat, lng = coord[0], coord[1]
+                    if abs(lat) > 90:
+                        lng, lat = lat, lng
+                    coordinates.append([float(lng), float(lat)])
+                elif isinstance(coord, dict):
+                    lat = coord.get('lat') or coord.get('latitude') or coord.get('y')
+                    lng = coord.get('lng') or coord.get('lon') or coord.get('longitude') or coord.get('x')
+                    if lat and lng:
+                        coordinates.append([float(lng), float(lat)])
         
         if not coordinates:
             return {
@@ -114,7 +128,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'Content-Type': 'application/json'
                 },
                 'isBase64Encoded': False,
-                'body': json.dumps({'error': 'Не удалось обработать координаты'})
+                'body': json.dumps({'error': 'Не удалось обработать координаты'}, ensure_ascii=False)
             }
         
         # Формируем GeoJSON geometry
@@ -126,12 +140,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Формируем ответ
         result = {
             'cadastral_number': cadastral_number,
-            'area': data.get('area'),
-            'category': data.get('category'),
-            'permitted_use': data.get('permitted_use'),
-            'address': data.get('address'),
-            'cost': data.get('cadastral_cost'),
-            'date': data.get('date_created'),
+            'area': data.get('area') or data.get('area_value'),
+            'category': data.get('category') or data.get('category_type'),
+            'permitted_use': data.get('permitted_use') or data.get('util_by_doc') or data.get('utilization'),
+            'address': data.get('address') or data.get('location'),
+            'cost': data.get('cost') or data.get('cadastral_cost') or data.get('cad_cost'),
+            'date': data.get('date') or data.get('date_create') or data.get('date_created'),
             'geometry': geometry,
             'raw_properties': data
         }
@@ -156,6 +170,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             },
             'isBase64Encoded': False,
             'body': json.dumps({'error': 'Таймаут запроса. API Росреестра не отвечает.'}, ensure_ascii=False)
+        }
+    
+    except requests.exceptions.JSONDecodeError as e:
+        print(f'[ERROR] JSON decode error: {str(e)}')
+        print(f'[ERROR] Response text: {response.text[:500]}')
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Access-Control-Allow-Origin': '*',
+                'Content-Type': 'application/json'
+            },
+            'isBase64Encoded': False,
+            'body': json.dumps({'error': 'API вернул некорректный ответ. Попробуйте другой кадастровый номер.'}, ensure_ascii=False)
         }
     
     except requests.exceptions.RequestException as e:
