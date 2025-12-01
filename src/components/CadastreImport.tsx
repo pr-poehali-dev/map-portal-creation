@@ -35,8 +35,19 @@ export default function CadastreImport({ userId, onSuccess }: CadastreImportProp
       const response = await fetch(`${CADASTRE_API_URL}?cadastral_number=${encodeURIComponent(cadastralNumber.trim())}`);
       const data = await response.json();
       
+      // Проверяем на сервисное сообщение (503 - API недоступен)
+      if (response.status === 503 && data.error === 'not_available') {
+        // Показываем инструкцию пользователю
+        const instructions = data.instructions.steps.join('\n');
+        throw new Error(
+          `${data.message}\n\n${data.instructions.title}\n${instructions}\n\n` +
+          `Telegram бот: ${data.telegram_bot}\n` +
+          `Или откройте: ${data.pkk_link}`
+        );
+      }
+      
       if (!response.ok) {
-        throw new Error(data.error || 'Ошибка загрузки данных');
+        throw new Error(data.error || data.message || 'Ошибка загрузки данных');
       }
       
       // Получаем геометрию из backend ответа
