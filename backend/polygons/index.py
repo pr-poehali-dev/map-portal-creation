@@ -512,12 +512,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     user = cur.fetchone()
                     
                     if not user or user['role'] != 'admin':
-                        if not check_permission(cur, user_id, 'layer', existing['layer'], 'delete'):
+                        segment_name = existing.get('segment') or existing.get('layer', '')
+                        if not check_permission(cur, user_id, 'layer', segment_name, 'delete'):
                             return {
                                 'statusCode': 403,
                                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                                 'body': json.dumps({'error': 'No permission to delete this object'})
                             }
+                
+                segment_value = existing.get('segment') or existing.get('layer', '')
                 
                 cur.execute(
                     "INSERT INTO trash_polygons (id, name, type, area, population, status, coordinates, color, layer, visible, attributes, user_id, original_created_at, moved_by_user) "
@@ -529,7 +532,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     "'" + existing['status'].replace("'", "''") + "', "
                     "'" + json.dumps(existing['coordinates']).replace("'", "''") + "', "
                     "'" + existing['color'].replace("'", "''") + "', "
-                    "'" + existing['layer'].replace("'", "''") + "', "
+                    "'" + segment_value.replace("'", "''") + "', "
                     "" + str(existing.get('visible', True)).lower() + ", "
                     "'" + json.dumps(existing.get('attributes', {})).replace("'", "''") + "', "
                     "'" + existing['user_id'].replace("'", "''") + "', "
