@@ -107,15 +107,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     ''', (limit,))
                     result = cur.fetchall()
                 
-                elif action == 'segments':
-                    cur.execute('''
-                        SELECT DISTINCT segment
-                        FROM t_p43707323_map_portal_creation.polygon_objects
-                        WHERE segment IS NOT NULL
-                        ORDER BY segment
-                    ''')
-                    segments_raw = cur.fetchall()
-                    result = [{'id': str(i), 'name': row['segment']} for i, row in enumerate(segments_raw)]
+                elif action == 'layers':
+                    result = []
                 
                 elif action == 'attributes':
                     cur.execute('''

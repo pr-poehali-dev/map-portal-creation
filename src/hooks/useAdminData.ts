@@ -102,15 +102,14 @@ export function useAdminData() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [usersRes, companiesRes, permsRes, auditRes, layersRes, attributesRes, beneficiariesRes, segmentsRes] = await Promise.all([
+      const [usersRes, companiesRes, permsRes, auditRes, layersRes, attributesRes, beneficiariesRes] = await Promise.all([
         fetch(`${ADMIN_API}?action=users`, { headers: getAuthHeaders() }),
         fetch(`${ADMIN_API}?action=companies`, { headers: getAuthHeaders() }),
         fetch(`${ADMIN_API}?action=permissions`, { headers: getAuthHeaders() }),
         fetch(`${ADMIN_API}?action=audit&limit=50`, { headers: getAuthHeaders() }),
         fetch(`${ADMIN_API}?action=layers`, { headers: getAuthHeaders() }),
         fetch(`${ADMIN_API}?action=attributes`, { headers: getAuthHeaders() }),
-        fetch(`${ADMIN_API}?action=beneficiaries`, { headers: getAuthHeaders() }),
-        fetch(SEGMENTS_API, { headers: getAuthHeaders() })
+        fetch(`${ADMIN_API}?action=beneficiaries`, { headers: getAuthHeaders() })
       ]);
 
       if (!usersRes.ok) {
@@ -126,15 +125,14 @@ export function useAdminData() {
         throw new Error('Failed to load data');
       }
 
-      const [usersData, companiesData, permsData, auditData, layersData, attributesData, beneficiariesData, segmentsData] = await Promise.all([
+      const [usersData, companiesData, permsData, auditData, layersData, attributesData, beneficiariesData] = await Promise.all([
         usersRes.json(),
         companiesRes.json(),
         permsRes.json(),
         auditRes.json(),
         layersRes.json(),
         attributesRes.json(),
-        beneficiariesRes.json(),
-        segmentsRes.json()
+        beneficiariesRes.json()
       ]);
 
       setUsers(usersData);
@@ -144,7 +142,18 @@ export function useAdminData() {
       setLayers(layersData);
       setAttributes(attributesData);
       setBeneficiaries(beneficiariesData);
-      setSegments(segmentsData);
+      
+      // Load segments separately
+      try {
+        const segmentsRes = await fetch(SEGMENTS_API, { headers: getAuthHeaders() });
+        if (segmentsRes.ok) {
+          const segmentsData = await segmentsRes.json();
+          setSegments(segmentsData);
+        }
+      } catch (error) {
+        console.error('Failed to load segments:', error);
+        setSegments([]);
+      }
     } catch (error) {
       toast({
         title: 'Ошибка загрузки',
