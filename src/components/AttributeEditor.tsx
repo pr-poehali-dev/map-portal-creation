@@ -2,16 +2,14 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Autocomplete } from '@/components/ui/autocomplete';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import Icon from '@/components/ui/icon';
 import { PolygonObject } from '@/types/polygon';
 import { useAuth } from '@/contexts/AuthContext';
 import { analyzeWithAI } from '@/services/ai';
 import { toast } from 'sonner';
 import func2url from '../../backend/func2url.json';
+import AttributeFieldRenderer from './AttributeEditor/AttributeFieldRenderer';
 
 interface AttributeTemplate {
   id: number;
@@ -37,8 +35,6 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
   const [templates, setTemplates] = useState<AttributeTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isLoadingDadata, setIsLoadingDadata] = useState(false);
-  const [innInput, setInnInput] = useState('');
   const [beneficiaries, setBeneficiaries] = useState<string[]>([]);
 
   useEffect(() => {
@@ -183,353 +179,95 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
     }
   };
 
-  const fetchCompanyDataByInn = async (inn: string, templateName: string) => {
-    if (!inn || inn.length < 10) {
-      toast.error('ИНН должен содержать 10 или 12 цифр');
-      return;
-    }
-    
-    setIsLoadingDadata(true);
-    
-    try {
-      const response = await fetch(`${func2url['company-save']}?inn=${inn}`);
-      const data = await response.json();
-      
-      if (!response.ok) {
-        toast.error(data.error || 'Ошибка получения данных');
-        return;
-      }
-      
-      const displayName = data.name ? `${data.name}, ИНН ${inn}` : inn;
-      handleAttributeChange(templateName, displayName);
-      toast.success('Правообладатель сохранён в базу!');
-      setInnInput('');
-    } catch (error) {
-      toast.error('Ошибка подключения к сервису');
-    } finally {
-      setIsLoadingDadata(false);
-    }
-  };
-
-  const renderField = (template: AttributeTemplate) => {
-    const attributeKey = Object.keys(editedObject.attributes).find(
-      key => key.toLowerCase() === template.name.toLowerCase()
-    ) || template.name;
-    
-    const value = editedObject.attributes[attributeKey] || '';
-
-    switch (template.field_type) {
-      case 'text':
-        if (template.name.toLowerCase() === 'бенефициар') {
-          return (
-            <Autocomplete
-              value={value}
-              onChange={(val) => handleAttributeChange(template.name, val)}
-              suggestions={beneficiaries}
-              placeholder={template.default_value || `Введите ${template.name.toLowerCase()}`}
-            />
-          );
-        }
-        
-        if (template.name.toLowerCase() === 'правообладатель') {
-          return (
-            <div className="space-y-2">
-              <Input
-                value={value}
-                onChange={(e) => handleAttributeChange(template.name, e.target.value)}
-                placeholder={template.default_value || `Введите ${template.name.toLowerCase()}`}
-              />
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="physical-person"
-                  checked={value === 'Физическое лицо'}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      handleAttributeChange(template.name, 'Физическое лицо');
-                      setInnInput('');
-                    } else {
-                      handleAttributeChange(template.name, '');
-                    }
-                  }}
-                />
-                <Label htmlFor="physical-person" className="text-sm cursor-pointer">
-                  Физическое лицо
-                </Label>
-              </div>
-              <div className="flex gap-2 items-end">
-                <div className="flex-1">
-                  <Label className="text-xs text-muted-foreground">Поиск по ИНН</Label>
-                  <Input
-                    value={innInput}
-                    onChange={(e) => setInnInput(e.target.value)}
-                    placeholder="10 или 12 цифр"
-                    className="h-8 text-sm"
-                    disabled={value === 'Физическое лицо'}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fetchCompanyDataByInn(innInput, template.name)}
-                  disabled={isLoadingDadata || !innInput || innInput.length < 10 || value === 'Физическое лицо'}
-                  className="h-8"
-                >
-                  {isLoadingDadata ? (
-                    <Icon name="Loader2" size={14} className="animate-spin" />
-                  ) : (
-                    <Icon name="Search" size={14} />
-                  )}
-                </Button>
-              </div>
-            </div>
-          );
-        }
-        return (
-          <Input
-            value={value}
-            onChange={(e) => handleAttributeChange(template.name, e.target.value)}
-            placeholder={template.default_value || `Введите ${template.name.toLowerCase()}`}
-          />
-        );
-
-      case 'textarea':
-        return (
-          <Textarea
-            value={value}
-            onChange={(e) => handleAttributeChange(template.name, e.target.value)}
-            placeholder={template.default_value || `Введите ${template.name.toLowerCase()}`}
-            rows={3}
-          />
-        );
-
-      case 'number':
-        return (
-          <Input
-            type="number"
-            value={value}
-            onChange={(e) => handleAttributeChange(template.name, e.target.value ? parseFloat(e.target.value) : '')}
-            placeholder={template.default_value || '0'}
-          />
-        );
-
-      case 'select':
-        const options = template.options ? template.options.split(',').map(o => o.trim()) : [];
-        
-        if (template.name.toLowerCase() === 'сегмент') {
-          const selectedSegments = Array.isArray(value) ? value : (value ? value.split(',').map((s: string) => s.trim()) : []);
-          
-          return (
-            <div className="space-y-2">
-              <div className="flex flex-wrap gap-2">
-                {options.map(option => {
-                  const isSelected = selectedSegments.includes(option);
-                  return (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => {
-                        let newSegments;
-                        if (isSelected) {
-                          newSegments = selectedSegments.filter((s: string) => s !== option);
-                        } else {
-                          newSegments = [...selectedSegments, option];
-                        }
-                        handleAttributeChange(template.name, newSegments.join(', '));
-                      }}
-                      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                        isSelected 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                      }`}
-                    >
-                      {option}
-                      {isSelected && (
-                        <Icon name="Check" size={14} className="ml-1 inline" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-              {selectedSegments.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Выбрано: {selectedSegments.join(', ')}
-                </p>
-              )}
-            </div>
-          );
-        }
-        
-        return (
-          <Select
-            value={value}
-            onValueChange={(val) => handleAttributeChange(template.name, val)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={`Выберите ${template.name.toLowerCase()}`} />
-            </SelectTrigger>
-            <SelectContent>
-              {options.map(option => (
-                <SelectItem key={option} value={option}>
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        );
-
-      case 'date':
-        return (
-          <Input
-            type="date"
-            value={value}
-            onChange={(e) => handleAttributeChange(template.name, e.target.value)}
-          />
-        );
-
-      case 'checkbox':
-        return (
-          <div className="flex items-center space-x-2">
-            <Switch
-              checked={value === 'true' || value === true}
-              onCheckedChange={(checked) => handleAttributeChange(template.name, checked)}
-            />
-            <span className="text-sm text-muted-foreground">
-              {value === 'true' || value === true ? 'Да' : 'Нет'}
-            </span>
-          </div>
-        );
-
-      case 'conditional_dates': {
-        const statusTemplate = templates.find(t => t.name === 'Правоустанавливающий статус');
-        const currentStatus = statusTemplate 
-          ? (editedObject.attributes[statusTemplate.name] || editedObject.attributes['правоустанавливающий статус'] || '')
-          : '';
-        
-        const conditionalValue = typeof value === 'object' ? value : { dateFrom: '', dateTo: '' };
-        
-        const handleDateFromChange = (newDateFrom: string) => {
-          const updatedValue = { dateFrom: newDateFrom, dateTo: conditionalValue.dateTo };
-          
-          if (currentStatus === 'Аренда' && newDateFrom && !conditionalValue.dateTo) {
-            const fromDate = new Date(newDateFrom);
-            fromDate.setFullYear(fromDate.getFullYear() + 49);
-            updatedValue.dateTo = fromDate.toISOString().split('T')[0];
-          }
-          
-          handleAttributeChange(template.name, updatedValue);
-        };
-        
-        return (
-          <div className="space-y-3">
-            {currentStatus ? (
-              <>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-muted-foreground">Статус:</span>
-                  <span className="font-medium">{currentStatus}</span>
-                </div>
-                
-                <div className="space-y-2">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Дата ОТ</Label>
-                    <Input
-                      type="date"
-                      value={conditionalValue.dateFrom || ''}
-                      onChange={(e) => handleDateFromChange(e.target.value)}
-                    />
-                  </div>
-                  
-                  {currentStatus === 'Аренда' && (
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Дата ДО</Label>
-                      <Input
-                        type="date"
-                        value={conditionalValue.dateTo || ''}
-                        onChange={(e) => handleAttributeChange(template.name, { ...conditionalValue, dateTo: e.target.value })}
-                      />
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="text-sm text-muted-foreground italic">
-                Сначала выберите "Правоустанавливающий статус"
-              </div>
-            )}
-          </div>
-        );
-      }
-
-      default:
-        return (
-          <Input
-            value={value}
-            onChange={(e) => handleAttributeChange(template.name, e.target.value)}
-            placeholder={`Введите ${template.name.toLowerCase()}`}
-          />
-        );
-    }
-  };
-
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <Icon name="Loader2" size={24} className="animate-spin" />
+      <div className="flex items-center justify-center h-full">
+        <Icon name="Loader2" className="animate-spin" size={32} />
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="name" className="text-sm font-semibold">
-            Название
-            <span className="text-destructive ml-1">*</span>
-          </Label>
-          <div className="mt-2">
-            <Input
-              id="name"
-              value={editedObject.name}
-              onChange={(e) => setEditedObject(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="Введите название участка"
-            />
-          </div>
-          {errors['name'] && (
-            <p className="text-xs text-destructive mt-1">{errors['name']}</p>
-          )}
-        </div>
+  const sortedTemplates = [...templates].sort((a, b) => a.sort_order - b.sort_order);
+  const nameTemplate = sortedTemplates.find(t => t.name.toLowerCase() === 'название');
+  const otherTemplates = sortedTemplates.filter(t => t.name.toLowerCase() !== 'название');
 
-        {templates
-          .filter(template => template.name.toLowerCase() !== 'название')
-          .map(template => (
-            <div key={template.id}>
-              <Label htmlFor={template.name} className="text-sm font-semibold">
-                {template.name}
-                {template.is_required && <span className="text-destructive ml-1">*</span>}
-              </Label>
-              <div className="mt-2">
-                {renderField(template)}
-              </div>
-              {errors[template.name] && (
-                <p className="text-xs text-destructive mt-1">{errors[template.name]}</p>
-              )}
-            </div>
-          ))}
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between p-4 border-b">
+        <h2 className="text-lg font-semibold">Редактировать атрибуты</h2>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleAutoFill}>
+            <Icon name="Sparkles" size={16} />
+            <span className="ml-2">AI Автозаполнение</span>
+          </Button>
+          <Button variant="ghost" size="icon" onClick={onCancel}>
+            <Icon name="X" size={20} />
+          </Button>
+        </div>
       </div>
 
-      <div className="flex gap-3 pt-4 border-t">
-        <Button onClick={handleAutoFill} variant="outline" className="flex-1">
-          <Icon name="Sparkles" size={16} className="mr-2" />
-          AI Заполнение
-        </Button>
-        <Button onClick={handleSave} className="flex-1">
-          <Icon name="Save" size={16} className="mr-2" />
-          Сохранить
-        </Button>
-        <Button onClick={onCancel} variant="outline" className="flex-1">
-          <Icon name="X" size={16} className="mr-2" />
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-4">
+          {nameTemplate && (
+            <div className="space-y-2">
+              <Label>
+                {nameTemplate.name}
+                {nameTemplate.is_required && <span className="text-destructive ml-1">*</span>}
+              </Label>
+              <Input
+                value={editedObject.name}
+                onChange={(e) => {
+                  setEditedObject(prev => ({ ...prev, name: e.target.value }));
+                  if (errors['name']) {
+                    setErrors(prev => {
+                      const newErrors = { ...prev };
+                      delete newErrors['name'];
+                      return newErrors;
+                    });
+                  }
+                }}
+                placeholder={nameTemplate.default_value || 'Введите название'}
+              />
+              {errors['name'] && (
+                <p className="text-sm text-destructive">{errors['name']}</p>
+              )}
+            </div>
+          )}
+
+          {otherTemplates.map(template => {
+            const attributeKey = Object.keys(editedObject.attributes).find(
+              key => key.toLowerCase() === template.name.toLowerCase()
+            ) || template.name;
+            
+            const value = editedObject.attributes[attributeKey] || '';
+
+            return (
+              <div key={template.id} className="space-y-2">
+                <Label>
+                  {template.name}
+                  {template.is_required && <span className="text-destructive ml-1">*</span>}
+                </Label>
+                <AttributeFieldRenderer
+                  template={template}
+                  value={value}
+                  onChange={(val) => handleAttributeChange(template.name, val)}
+                  beneficiaries={beneficiaries}
+                />
+                {errors[template.name] && (
+                  <p className="text-sm text-destructive">{errors[template.name]}</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </ScrollArea>
+
+      <div className="flex justify-end gap-2 p-4 border-t">
+        <Button variant="outline" onClick={onCancel}>
           Отмена
+        </Button>
+        <Button onClick={handleSave}>
+          Сохранить
         </Button>
       </div>
     </div>
