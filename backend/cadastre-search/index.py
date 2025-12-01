@@ -78,8 +78,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     try:
         # Выполняем поиск
+        print(f'[DEBUG] Requesting: {search_url_with_params}')
         with urllib.request.urlopen(req, timeout=15, context=ssl_context) as response:
-            search_data = json.loads(response.read().decode('utf-8'))
+            response_text = response.read().decode('utf-8')
+            print(f'[DEBUG] Response status: {response.status}')
+            print(f'[DEBUG] Response body: {response_text[:500]}...')
+            search_data = json.loads(response_text)
             
             # Geoportal API возвращает массив results
             if not search_data or not isinstance(search_data, dict):
@@ -175,10 +179,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
     except urllib.error.HTTPError as e:
+        error_body = e.read().decode('utf-8') if e.fp else 'No response body'
+        print(f'[ERROR] HTTP {e.code}: {error_body}')
+        
         if e.code == 404:
             error_msg = 'Участок с таким кадастровым номером не найден'
         else:
-            error_msg = f'Ошибка HTTP {e.code}'
+            error_msg = f'Ошибка HTTP {e.code}: {error_body[:200]}'
         
         return {
             'statusCode': e.code,
@@ -187,7 +194,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Content-Type': 'application/json'
             },
             'isBase64Encoded': False,
-            'body': json.dumps({'error': error_msg})
+            'body': json.dumps({'error': error_msg}, ensure_ascii=False)
         }
     
     except Exception as e:
