@@ -1,0 +1,43 @@
+{
+  "tests": [
+    {
+      "name": "Test OPTIONS CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200,
+      "bodyMatcher": "exact",
+      "expectedBody": ""
+    },
+    {
+      "name": "Test missing INN",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 400,
+      "bodyMatcher": "partial",
+      "expectedBody": {
+        "error": "string"
+      }
+    },
+    {
+      "name": "Test invalid INN format",
+      "method": "GET",
+      "path": "/?inn=abc",
+      "expectedStatus": 400,
+      "bodyMatcher": "partial",
+      "expectedBody": {
+        "error": "string"
+      }
+    },
+    {
+      "name": "Test valid INN (Yandex)",
+      "method": "GET",
+      "path": "/?inn=7736207543",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial",
+      "expectedBody": {
+        "inn": "string",
+        "name": "string"
+      }
+    }
+  ]
+}

@@ -22,6 +22,9 @@ interface MapSidebarProps {
   types: string[];
   filterType: string;
   setFilterType: (type: string) => void;
+  owners: string[];
+  filterOwner: string;
+  setFilterOwner: (owner: string) => void;
   filteredData: PolygonObject[];
   selectedObject: PolygonObject | null;
   setSelectedObject: (obj: PolygonObject | null) => void;
@@ -51,6 +54,9 @@ export default function MapSidebar({
   types,
   filterType,
   setFilterType,
+  owners,
+  filterOwner,
+  setFilterOwner,
   filteredData,
   selectedObject,
   setSelectedObject,
@@ -179,20 +185,43 @@ export default function MapSidebar({
         </TabsList>
 
         <TabsContent value="objects" className="flex-1 flex flex-col mt-0 min-h-0 data-[state=inactive]:hidden">
-          <div className="px-4 py-3 border-b border-sidebar-border flex-shrink-0">
-            <Label className="text-xs text-sidebar-foreground/60 mb-2 block">Фильтр по типу</Label>
-            <div className="flex flex-wrap gap-2">
-              {types.map(type => (
-                <Badge
-                  key={type}
-                  variant={filterType === type ? "default" : "outline"}
-                  className="cursor-pointer hover:scale-105 transition-transform"
-                  onClick={() => setFilterType(type)}
-                >
-                  {type}
-                </Badge>
-              ))}
+          <div className="px-4 py-3 border-b border-sidebar-border flex-shrink-0 space-y-3">
+            <div>
+              <Label className="text-xs text-sidebar-foreground/60 mb-2 block">Фильтр по типу</Label>
+              <div className="flex flex-wrap gap-2">
+                {types.map(type => (
+                  <Badge
+                    key={type}
+                    variant={filterType === type ? "default" : "outline"}
+                    className="cursor-pointer hover:scale-105 transition-transform"
+                    onClick={() => setFilterType(type)}
+                  >
+                    {type}
+                  </Badge>
+                ))}
+              </div>
             </div>
+            
+            {owners.length > 1 && (
+              <div>
+                <Label className="text-xs text-sidebar-foreground/60 mb-2 block">
+                  <Icon name="Building2" size={12} className="inline mr-1" />
+                  Правообладатель
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {owners.map(owner => (
+                    <Badge
+                      key={owner}
+                      variant={filterOwner === owner ? "default" : "outline"}
+                      className="cursor-pointer hover:scale-105 transition-transform text-xs"
+                      onClick={() => setFilterOwner(owner)}
+                    >
+                      {owner}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           
           <ScrollArea className="flex-1" style={{ height: '100%' }}>

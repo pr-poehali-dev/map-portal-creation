@@ -28,6 +28,7 @@ export default function Index() {
   const [selectedObject, setSelectedObject] = useState<PolygonObject | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('Все');
+  const [filterOwner, setFilterOwner] = useState('Все');
   const [segmentVisibility, setSegmentVisibility] = useState<Record<string, boolean>>(
     segments.reduce((acc, segment) => ({ ...acc, [segment.name]: true }), {})
   );
@@ -94,10 +95,25 @@ export default function Index() {
                           item.type.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterType === 'Все' || item.type === filterType;
     const matchesSegment = segmentVisibility[item.segment];
-    return matchesSearch && matchesFilter && matchesSegment;
+    
+    const ownerName = item.attributes?.['Правообладатель'] || item.attributes?.['правообладатель'] || '';
+    const matchesOwner = filterOwner === 'Все' || ownerName === filterOwner;
+    
+    return matchesSearch && matchesFilter && matchesSegment && matchesOwner;
   });
 
   const types = ['Все', ...Array.from(new Set(polygonData.map(item => item.type)))];
+  
+  const owners = [
+    'Все',
+    ...Array.from(
+      new Set(
+        polygonData
+          .map(item => item.attributes?.['Правообладатель'] || item.attributes?.['правообладатель'])
+          .filter(Boolean)
+      )
+    )
+  ];
 
   return (
     <div className="flex h-screen bg-background dark">
@@ -109,6 +125,9 @@ export default function Index() {
         types={types}
         filterType={filterType}
         setFilterType={setFilterType}
+        owners={owners}
+        filterOwner={filterOwner}
+        setFilterOwner={setFilterOwner}
         filteredData={filteredData}
         selectedObject={selectedObject}
         setSelectedObject={setSelectedObject}

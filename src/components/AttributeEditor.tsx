@@ -167,7 +167,7 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
     setIsLoadingDadata(true);
     
     try {
-      const response = await fetch(`${func2url.dadata}?inn=${inn}`);
+      const response = await fetch(`${func2url['company-save']}?inn=${inn}`);
       const data = await response.json();
       
       if (!response.ok) {
@@ -176,7 +176,7 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
       }
       
       handleAttributeChange(templateName, data.name || '');
-      toast.success('Данные правообладателя загружены!');
+      toast.success('Правообладатель сохранён в базу!');
       setInnInput('');
     } catch (error) {
       toast.error('Ошибка подключения к сервису');
