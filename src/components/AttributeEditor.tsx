@@ -27,7 +27,7 @@ interface AttributeEditorProps {
   onCancel: () => void;
 }
 
-const ADMIN_API = 'https://functions.poehali.dev/3e92b954-4498-4bea-8de7-898ccb110b58';
+const ADMIN_API = 'https://functions.poehali.dev/083b2a5f-b050-44a3-b56d-a27ca04ec81b';
 
 export default function AttributeEditor({ object, onSave, onCancel }: AttributeEditorProps) {
   const { user } = useAuth();
