@@ -239,6 +239,23 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
                 onChange={(e) => handleAttributeChange(template.name, e.target.value)}
                 placeholder={template.default_value || `Введите ${template.name.toLowerCase()}`}
               />
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="physical-person"
+                  checked={value === 'Физическое лицо'}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      handleAttributeChange(template.name, 'Физическое лицо');
+                      setInnInput('');
+                    } else {
+                      handleAttributeChange(template.name, '');
+                    }
+                  }}
+                />
+                <Label htmlFor="physical-person" className="text-sm cursor-pointer">
+                  Физическое лицо
+                </Label>
+              </div>
               <div className="flex gap-2 items-end">
                 <div className="flex-1">
                   <Label className="text-xs text-muted-foreground">Поиск по ИНН</Label>
@@ -247,6 +264,7 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
                     onChange={(e) => setInnInput(e.target.value)}
                     placeholder="10 или 12 цифр"
                     className="h-8 text-sm"
+                    disabled={value === 'Физическое лицо'}
                   />
                 </div>
                 <Button
@@ -254,7 +272,7 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
                   variant="outline"
                   size="sm"
                   onClick={() => fetchCompanyDataByInn(innInput, template.name)}
-                  disabled={isLoadingDadata || !innInput || innInput.length < 10}
+                  disabled={isLoadingDadata || !innInput || innInput.length < 10 || value === 'Физическое лицо'}
                   className="h-8"
                 >
                   {isLoadingDadata ? (
