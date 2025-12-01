@@ -15,6 +15,7 @@ import AIAssistant from './AIAssistant';
 import { BadgePulse } from '@/components/ui/badge-pulse';
 import CadastreImport from './CadastreImport';
 import SegmentManager from './SegmentManager';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface MapSidebarProps {
   user: any;
@@ -48,6 +49,14 @@ interface MapSidebarProps {
   loadSampleData: () => void;
 }
 
+const SEGMENTS_API = 'https://functions.poehali.dev/a0768bda-66ad-4c1e-b0f8-a32596d094b8';
+
+interface Segment {
+  id: number;
+  name: string;
+  color: string;
+}
+
 export default function MapSidebar({
   user,
   logout,
@@ -79,7 +88,32 @@ export default function MapSidebar({
   handleDeleteAll,
   loadSampleData
 }: MapSidebarProps) {
+  const { user: authUser } = useAuth();
+  const [segmentColors, setSegmentColors] = useState<Record<string, string>>({});
   const [showAIBadge, setShowAIBadge] = useState(true);
+  
+  useEffect(() => {
+    const loadSegments = async () => {
+      try {
+        const response = await fetch(SEGMENTS_API, {
+          headers: { 'X-User-Id': authUser?.token || '' }
+        });
+        
+        if (response.ok) {
+          const data: Segment[] = await response.json();
+          const colors: Record<string, string> = {};
+          data.forEach(seg => {
+            colors[seg.name] = seg.color;
+          });
+          setSegmentColors(colors);
+        }
+      } catch (error) {
+        console.error('Failed to load segments', error);
+      }
+    };
+    
+    loadSegments();
+  }, [authUser]);
 
 
 
@@ -288,7 +322,13 @@ export default function MapSidebar({
                   <div className="flex items-start gap-3">
                     <div
                       className="w-4 h-4 rounded-full mt-1 flex-shrink-0"
-                      style={{ backgroundColor: item.color }}
+                      style={{ 
+                        backgroundColor: (() => {
+                          const segmentNames = item.segment ? item.segment.split(',').map((s: string) => s.trim()).filter(Boolean) : [];
+                          const firstSegmentName = segmentNames[0] || '';
+                          return firstSegmentName && segmentColors[firstSegmentName] ? segmentColors[firstSegmentName] : item.color;
+                        })()
+                      }}
                     />
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-xs text-card-foreground mb-2">{item.name}</h3>

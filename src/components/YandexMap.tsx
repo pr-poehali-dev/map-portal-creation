@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PolygonObject } from '@/types/polygon';
 import { formatArea } from '@/utils/geoUtils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface YandexMapProps {
   polygons: PolygonObject[];
@@ -16,11 +17,44 @@ declare global {
   }
 }
 
+const SEGMENTS_API = 'https://functions.poehali.dev/a0768bda-66ad-4c1e-b0f8-a32596d094b8';
+
+interface Segment {
+  id: number;
+  name: string;
+  color: string;
+}
+
 export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick, opacity = 0.8, showAllTrigger = 0 }: YandexMapProps) {
+  const { user } = useAuth();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const polygonObjectsRef = useRef<Map<string, any>>(new Map());
   const isInitialLoadRef = useRef<boolean>(true);
+  const [segmentColors, setSegmentColors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const loadSegments = async () => {
+      try {
+        const response = await fetch(SEGMENTS_API, {
+          headers: { 'X-User-Id': user?.token || '' }
+        });
+        
+        if (response.ok) {
+          const data: Segment[] = await response.json();
+          const colors: Record<string, string> = {};
+          data.forEach(seg => {
+            colors[seg.name] = seg.color;
+          });
+          setSegmentColors(colors);
+        }
+      } catch (error) {
+        console.error('Failed to load segments', error);
+      }
+    };
+    
+    loadSegments();
+  }, [user]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -53,7 +87,7 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
   }, []);
 
   useEffect(() => {
-    if (!mapInstanceRef.current || !window.ymaps) return;
+    if (!mapInstanceRef.current || !window.ymaps || Object.keys(segmentColors).length === 0) return;
 
     polygonObjectsRef.current.forEach(obj => {
       mapInstanceRef.current.geoObjects.remove(obj);
@@ -86,6 +120,14 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
       }
 
       const isSelected = selectedPolygonId === polygon.id;
+      
+      const segmentNames = polygon.segment ? polygon.segment.split(',').map(s => s.trim()).filter(Boolean) : [];
+      const firstSegmentName = segmentNames[0] || '';
+      const polygonColor = firstSegmentName && segmentColors[firstSegmentName] ? segmentColors[firstSegmentName] : polygon.color;
+      
+      const segmentBadges = segmentNames.length > 0
+        ? segmentNames.map(name => `<span style="display: inline-block; padding: 2px 8px; margin: 2px; background-color: ${segmentColors[name] || '#3B82F6'}; color: white; border-radius: 4px; font-size: 11px;">${name}</span>`).join('')
+        : '<span style="color: #999; font-size: 13px;">Не указан</span>';
 
       const yandexPolygon = new window.ymaps.Polygon(
         yandexCoordinates,
@@ -98,13 +140,17 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
               <p style="margin: 4px 0; font-size: 13px;"><strong>Площадь:</strong> ${formatArea(polygon.area)}</p>
               ${polygon.population ? `<p style="margin: 4px 0; font-size: 13px;"><strong>Население:</strong> ${polygon.population.toLocaleString()}</p>` : ''}
               <p style="margin: 4px 0; font-size: 13px;"><strong>Статус:</strong> ${polygon.status}</p>
+              <div style="margin: 8px 0 4px 0;">
+                <strong style="font-size: 13px;">Сегмент:</strong><br/>
+                ${segmentBadges}
+              </div>
             </div>
           `
         },
         {
-          fillColor: polygon.color,
+          fillColor: polygonColor,
           fillOpacity: 0.8,
-          strokeColor: polygon.color,
+          strokeColor: polygonColor,
           strokeWidth: 2,
           strokeOpacity: 0
         }
@@ -167,7 +213,7 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
         isInitialLoadRef.current = false;
       }
     }
-  }, [polygons, selectedPolygonId, opacity, onPolygonClick]);
+  }, [polygons, selectedPolygonId, opacity, onPolygonClick, segmentColors]);
 
   useEffect(() => {
     if (showAllTrigger === 0 || !mapInstanceRef.current || !window.ymaps || polygons.length === 0) return;

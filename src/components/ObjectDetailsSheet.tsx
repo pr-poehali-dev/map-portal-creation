@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,7 @@ import CompanyDetailsDialog from '@/components/CompanyDetailsDialog';
 import SegmentBadges from '@/components/SegmentBadges';
 import { PolygonObject } from '@/types/polygon';
 import { formatArea } from '@/utils/geoUtils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ObjectDetailsSheetProps {
   selectedObject: PolygonObject | null;
@@ -31,9 +32,36 @@ export default function ObjectDetailsSheet({
   handleDeleteClick,
   handleExportSelected
 }: ObjectDetailsSheetProps) {
+  const { user } = useAuth();
+  const [segmentColors, setSegmentColors] = useState<Record<string, string>>({});
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [companyDialogOpen, setCompanyDialogOpen] = useState(false);
   const [selectedCompanyInn, setSelectedCompanyInn] = useState<string>('');
+  
+  useEffect(() => {
+    const loadSegments = async () => {
+      try {
+        const response = await fetch('https://functions.poehali.dev/a0768bda-66ad-4c1e-b0f8-a32596d094b8', {
+          headers: { 'X-User-Id': user?.token || '' }
+        });
+        
+        if (response.ok) {
+          const data: Array<{ id: number; name: string; color: string }> = await response.json();
+          const colors: Record<string, string> = {};
+          data.forEach(seg => {
+            colors[seg.name] = seg.color;
+          });
+          setSegmentColors(colors);
+        }
+      } catch (error) {
+        console.error('Failed to load segments', error);
+      }
+    };
+    
+    if (selectedObject) {
+      loadSegments();
+    }
+  }, [user, selectedObject]);
 
   const extractInnFromOwner = (ownerString: string): string | null => {
     const innMatch = ownerString.match(/ИНН\s*(\d{10,12})/);
@@ -71,7 +99,13 @@ export default function ObjectDetailsSheet({
           <div className="flex items-start gap-3 mb-2">
             <div
               className="w-6 h-6 rounded-lg flex-shrink-0"
-              style={{ backgroundColor: selectedObject.color }}
+              style={{ 
+                backgroundColor: (() => {
+                  const segmentNames = selectedObject.segment ? selectedObject.segment.split(',').map(s => s.trim()).filter(Boolean) : [];
+                  const firstSegmentName = segmentNames[0] || '';
+                  return firstSegmentName && segmentColors[firstSegmentName] ? segmentColors[firstSegmentName] : selectedObject.color;
+                })()
+              }}
             />
             <div className="flex-1 min-w-0">
               <SheetTitle className="text-2xl break-words">{selectedObject.name}</SheetTitle>

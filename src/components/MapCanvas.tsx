@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import YandexMap from '@/components/YandexMap';
 import Icon from '@/components/ui/icon';
 import { PolygonObject } from '@/types/polygon';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface MapCanvasProps {
   useYandexMap: boolean;
@@ -11,6 +13,14 @@ interface MapCanvasProps {
   showAllTrigger: number;
 }
 
+const SEGMENTS_API = 'https://functions.poehali.dev/a0768bda-66ad-4c1e-b0f8-a32596d094b8';
+
+interface Segment {
+  id: number;
+  name: string;
+  color: string;
+}
+
 export default function MapCanvas({
   useYandexMap,
   filteredData,
@@ -19,6 +29,38 @@ export default function MapCanvas({
   mapOpacity,
   showAllTrigger
 }: MapCanvasProps) {
+  const { user } = useAuth();
+  const [segmentColors, setSegmentColors] = useState<Record<string, string>>({});
+  
+  useEffect(() => {
+    const loadSegments = async () => {
+      try {
+        const response = await fetch(SEGMENTS_API, {
+          headers: { 'X-User-Id': user?.token || '' }
+        });
+        
+        if (response.ok) {
+          const data: Segment[] = await response.json();
+          const colors: Record<string, string> = {};
+          data.forEach(seg => {
+            colors[seg.name] = seg.color;
+          });
+          setSegmentColors(colors);
+        }
+      } catch (error) {
+        console.error('Failed to load segments', error);
+      }
+    };
+    
+    loadSegments();
+  }, [user]);
+  
+  const getPolygonColor = (polygon: PolygonObject) => {
+    const segmentNames = polygon.segment ? polygon.segment.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const firstSegmentName = segmentNames[0] || '';
+    return firstSegmentName && segmentColors[firstSegmentName] ? segmentColors[firstSegmentName] : polygon.color;
+  };
+  
   return (
     <div className="flex-1 relative bg-muted/30 overflow-hidden">
       {useYandexMap ? (
@@ -60,9 +102,9 @@ export default function MapCanvas({
                       <polygon
                         key={idx}
                         points={points}
-                        fill={item.color}
+                        fill={getPolygonColor(item)}
                         fillOpacity={selectedObject?.id === item.id ? 0.6 : 0.4}
-                        stroke={item.color}
+                        stroke={getPolygonColor(item)}
                         strokeWidth={selectedObject?.id === item.id ? 0.4 : 0.2}
                         className="transition-all"
                       />
@@ -91,9 +133,9 @@ export default function MapCanvas({
                 >
                   <polygon
                     points={points}
-                    fill={item.color}
+                    fill={getPolygonColor(item)}
                     fillOpacity={selectedObject?.id === item.id ? 0.6 : 0.4}
-                    stroke={item.color}
+                    stroke={getPolygonColor(item)}
                     strokeWidth={selectedObject?.id === item.id ? 0.4 : 0.2}
                     className="transition-all"
                   />
