@@ -151,10 +151,6 @@ export default function MapSidebar({
             <Icon name="Layers" size={16} className="mr-2" />
             Объекты
           </TabsTrigger>
-          <TabsTrigger value="segments" className="flex-1">
-            <Icon name="Layers" size={16} className="mr-2" />
-            Сегменты
-          </TabsTrigger>
           <TabsTrigger value="layers" className="flex-1">
             <Icon name="Eye" size={16} className="mr-2" />
             Слои
@@ -242,78 +238,7 @@ export default function MapSidebar({
           </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="segments" className="flex-1 flex flex-col mt-0 min-h-0 data-[state=inactive]:hidden">
-          <ScrollArea className="flex-1">
-            <div className="p-4 space-y-4">
-              {user?.role === 'admin' && (
-                <div className="space-y-2 mb-4">
-                  {polygonData.length === 0 && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full"
-                      onClick={loadSampleData}
-                    >
-                      <Icon name="Database" size={16} className="mr-2" />
-                      Загрузить демо-данные
-                    </Button>
-                  )}
-                  {polygonData.length > 0 && (
-                    <Button 
-                      variant="destructive" 
-                      size="sm" 
-                      className="w-full"
-                      onClick={handleDeleteAll}
-                    >
-                      <Icon name="Trash2" size={16} className="mr-2" />
-                      Удалить все объекты ({polygonData.length})
-                    </Button>
-                  )}
-                </div>
-              )}
 
-              <div className="space-y-1 mb-6">
-                <Label className="text-xs text-sidebar-foreground/60">Прозрачность объектов</Label>
-                <div className="flex items-center gap-3">
-                  <Slider
-                    value={mapOpacity}
-                    onValueChange={setMapOpacity}
-                    max={100}
-                    step={1}
-                    className="flex-1"
-                  />
-                  <span className="text-sm text-sidebar-foreground font-medium w-12">{mapOpacity[0]}%</span>
-                </div>
-              </div>
-
-              {segments.map(segment => (
-                <Card key={segment.name} className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-4 h-4 rounded"
-                        style={{ backgroundColor: segment.color }}
-                      />
-                      <span className="font-medium text-sm text-card-foreground">{segment.name}</span>
-                    </div>
-                    <Switch
-                      checked={segmentVisibility[segment.name]}
-                      onCheckedChange={(checked) =>
-                        setSegmentVisibility(prev => ({ ...prev, [segment.name]: checked }))
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Icon name="Database" size={12} />
-                    <span>
-                      {polygonData.filter(item => item.segment === segment.name).length} объектов
-                    </span>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </ScrollArea>
-        </TabsContent>
 
         <TabsContent value="layers" className="flex-1 flex flex-col mt-0 min-h-0 data-[state=inactive]:hidden">
           <ScrollArea className="flex-1">
