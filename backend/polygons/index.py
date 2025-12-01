@@ -523,6 +523,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 segment_value = existing.get('segment') or existing.get('layer', '')
                 
                 cur.execute(
+                    "DELETE FROM trash_polygons WHERE id = '" + polygon_id.replace("'", "''") + "'"
+                )
+                
+                cur.execute(
                     "INSERT INTO trash_polygons (id, name, type, area, population, status, coordinates, color, layer, visible, attributes, user_id, original_created_at, moved_by_user) "
                     "VALUES ('" + existing['id'].replace("'", "''") + "', "
                     "'" + existing['name'].replace("'", "''") + "', "
