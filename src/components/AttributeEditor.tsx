@@ -235,13 +235,17 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
         );
 
       case 'conditional_dates': {
-        const statusOptions = template.options ? template.options.split(',').map(o => o.trim()) : [];
-        const conditionalValue = typeof value === 'object' ? value : { status: '', dateFrom: '', dateTo: '' };
+        const statusTemplate = templates.find(t => t.name === 'Правоустанавливающий статус');
+        const currentStatus = statusTemplate 
+          ? (editedObject.attributes[statusTemplate.name] || editedObject.attributes['правоустанавливающий статус'] || '')
+          : '';
+        
+        const conditionalValue = typeof value === 'object' ? value : { dateFrom: '', dateTo: '' };
         
         const handleDateFromChange = (newDateFrom: string) => {
-          const updatedValue = { ...conditionalValue, dateFrom: newDateFrom };
+          const updatedValue = { dateFrom: newDateFrom, dateTo: conditionalValue.dateTo };
           
-          if (conditionalValue.status === 'Аренда' && newDateFrom && !conditionalValue.dateTo) {
+          if (currentStatus === 'Аренда' && newDateFrom && !conditionalValue.dateTo) {
             const fromDate = new Date(newDateFrom);
             fromDate.setFullYear(fromDate.getFullYear() + 49);
             updatedValue.dateTo = fromDate.toISOString().split('T')[0];
@@ -252,43 +256,38 @@ export default function AttributeEditor({ object, onSave, onCancel }: AttributeE
         
         return (
           <div className="space-y-3">
-            <Select
-              value={conditionalValue.status || ''}
-              onValueChange={(val) => handleAttributeChange(template.name, { ...conditionalValue, status: val })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Выберите статус" />
-              </SelectTrigger>
-              <SelectContent>
-                {statusOptions.map(option => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            {conditionalValue.status && (
-              <div className="space-y-2">
-                <div>
-                  <Label className="text-xs text-muted-foreground">Дата ОТ</Label>
-                  <Input
-                    type="date"
-                    value={conditionalValue.dateFrom || ''}
-                    onChange={(e) => handleDateFromChange(e.target.value)}
-                  />
+            {currentStatus ? (
+              <>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">Статус:</span>
+                  <span className="font-medium">{currentStatus}</span>
                 </div>
                 
-                {conditionalValue.status === 'Аренда' && (
+                <div className="space-y-2">
                   <div>
-                    <Label className="text-xs text-muted-foreground">Дата ДО</Label>
+                    <Label className="text-xs text-muted-foreground">Дата ОТ</Label>
                     <Input
                       type="date"
-                      value={conditionalValue.dateTo || ''}
-                      onChange={(e) => handleAttributeChange(template.name, { ...conditionalValue, dateTo: e.target.value })}
+                      value={conditionalValue.dateFrom || ''}
+                      onChange={(e) => handleDateFromChange(e.target.value)}
                     />
                   </div>
-                )}
+                  
+                  {currentStatus === 'Аренда' && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Дата ДО</Label>
+                      <Input
+                        type="date"
+                        value={conditionalValue.dateTo || ''}
+                        onChange={(e) => handleAttributeChange(template.name, { ...conditionalValue, dateTo: e.target.value })}
+                      />
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-muted-foreground italic">
+                Сначала выберите "Правоустанавливающий статус"
               </div>
             )}
           </div>
