@@ -19,6 +19,7 @@ export default function CadastreImport({ userId, onSuccess }: CadastreImportProp
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [telegramLink, setTelegramLink] = useState<string | null>(null);
 
   const handleImport = async () => {
     if (!cadastralNumber.trim()) {
@@ -37,13 +38,14 @@ export default function CadastreImport({ userId, onSuccess }: CadastreImportProp
       
       // Проверяем на сервисное сообщение (503 - API недоступен)
       if (response.status === 503 && data.error === 'not_available') {
-        // Показываем инструкцию пользователю
+        // Показываем инструкцию с кнопкой для открытия бота
         const instructions = data.instructions.steps.join('\n');
-        throw new Error(
-          `${data.message}\n\n${data.instructions.title}\n${instructions}\n\n` +
-          `Telegram бот: ${data.telegram_bot}\n` +
-          `Или откройте: ${data.pkk_link}`
+        setError(
+          `${data.message}\n\n${data.instructions.title}\n${instructions}`
         );
+        setTelegramLink(data.telegram_link);
+        setLoading(false);
+        return;
       }
       
       if (!response.ok) {
@@ -164,7 +166,20 @@ export default function CadastreImport({ userId, onSuccess }: CadastreImportProp
       {error && (
         <Alert variant="destructive">
           <Icon name="AlertCircle" size={16} />
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription className="whitespace-pre-line">
+            {error}
+            {telegramLink && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3 w-full"
+                onClick={() => window.open(telegramLink, '_blank')}
+              >
+                <Icon name="MessageCircle" size={16} className="mr-2" />
+                Открыть бота в Telegram
+              </Button>
+            )}
+          </AlertDescription>
         </Alert>
       )}
       
