@@ -57,6 +57,7 @@ export default function Index() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [objectToDelete, setObjectToDelete] = useState<string | null>(null);
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
+  const [egrnImportOpen, setEgrnImportOpen] = useState(false);
   const [viewingTrash, setViewingTrash] = useState(false);
   const [confirmPermanentDelete, setConfirmPermanentDelete] = useState<string | null>(null);
   const [confirmEmptyTrash, setConfirmEmptyTrash] = useState(false);
@@ -163,6 +164,7 @@ export default function Index() {
           selectedObject={selectedObject}
           setShowAllTrigger={setShowAllTrigger}
           setBulkImportOpen={setBulkImportOpen}
+          setEgrnImportOpen={setEgrnImportOpen}
           handleExportAll={handleExportAll}
           handleExportFiltered={() => handleExportFiltered(filteredData)}
           handleExportCadastralNumbers={handleExportCadastralNumbers}
@@ -214,6 +216,8 @@ export default function Index() {
         bulkImportOpen={bulkImportOpen}
         setBulkImportOpen={setBulkImportOpen}
         handleBulkImport={handleBulkImport}
+        egrnImportOpen={egrnImportOpen}
+        setEgrnImportOpen={setEgrnImportOpen}
         deleteDialogOpen={deleteDialogOpen}
         setDeleteDialogOpen={setDeleteDialogOpen}
         handleDeleteConfirm={() => handleDeleteConfirm(objectToDelete)}

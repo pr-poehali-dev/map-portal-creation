@@ -1,6 +1,7 @@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import GeoImportDialog from '@/components/GeoImportDialog';
 import BulkCadastralImport from '@/components/BulkCadastralImport';
+import EGRNImportDialog from '@/components/EGRNImportDialog';
 import { PolygonObject } from '@/types/polygon';
 
 interface MapDialogsProps {
@@ -10,6 +11,8 @@ interface MapDialogsProps {
   bulkImportOpen: boolean;
   setBulkImportOpen: (open: boolean) => void;
   handleBulkImport: (parcels: Array<{ cadastralNumber: string; coordinates: [number, number]; area?: number; address?: string; category?: string }>) => Promise<void>;
+  egrnImportOpen: boolean;
+  setEgrnImportOpen: (open: boolean) => void;
   deleteDialogOpen: boolean;
   setDeleteDialogOpen: (open: boolean) => void;
   handleDeleteConfirm: () => void;
@@ -29,6 +32,8 @@ export default function MapDialogs({
   bulkImportOpen,
   setBulkImportOpen,
   handleBulkImport,
+  egrnImportOpen,
+  setEgrnImportOpen,
   deleteDialogOpen,
   setDeleteDialogOpen,
   handleDeleteConfirm,
@@ -52,6 +57,12 @@ export default function MapDialogs({
         open={bulkImportOpen}
         onOpenChange={setBulkImportOpen}
         onImport={handleBulkImport}
+      />
+
+      <EGRNImportDialog
+        open={egrnImportOpen}
+        onOpenChange={setEgrnImportOpen}
+        onImport={handleImport}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

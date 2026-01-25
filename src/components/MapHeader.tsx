@@ -10,6 +10,7 @@ interface MapHeaderProps {
   selectedObject: PolygonObject | null;
   setShowAllTrigger: (fn: (prev: number) => number) => void;
   setBulkImportOpen: (value: boolean) => void;
+  setEgrnImportOpen: (value: boolean) => void;
   handleExportAll: () => void;
   handleExportFiltered: () => void;
   handleExportCadastralNumbers: () => void;
@@ -22,6 +23,7 @@ export default function MapHeader({
   selectedObject,
   setShowAllTrigger,
   setBulkImportOpen,
+  setEgrnImportOpen,
   handleExportAll,
   handleExportFiltered,
   handleExportCadastralNumbers,
@@ -47,14 +49,24 @@ export default function MapHeader({
           Показать все
         </Button>
         
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setBulkImportOpen(true)}
-        >
-          <Icon name="Upload" size={16} className="mr-2" />
-          Массовый импорт
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Icon name="Upload" size={16} className="mr-2" />
+              Импорт
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem onClick={() => setBulkImportOpen(true)}>
+              <Icon name="MapPin" size={16} className="mr-2" />
+              Массовый импорт (кадастр)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setEgrnImportOpen(true)}>
+              <Icon name="FileText" size={16} className="mr-2" />
+              Импорт ЕГРН (ZIP)
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
