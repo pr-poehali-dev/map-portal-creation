@@ -94,10 +94,12 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
     })));
   }, [polygons]);
   
-  const hasSegmentColors = Object.keys(segmentColors).length > 0;
+  const segmentColorsKey = useMemo(() => {
+    return JSON.stringify(segmentColors);
+  }, [segmentColors]);
 
   useEffect(() => {
-    if (!mapInstanceRef.current || !window.ymaps || !hasSegmentColors) return;
+    if (!mapInstanceRef.current || !window.ymaps || Object.keys(segmentColors).length === 0) return;
 
     polygonObjectsRef.current.forEach(obj => {
       mapInstanceRef.current.geoObjects.remove(obj);
@@ -223,7 +225,7 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
         isInitialLoadRef.current = false;
       }
     }
-  }, [polygonSerializedKey, selectedPolygonId, opacity, hasSegmentColors, polygons, segmentColors]);
+  }, [polygonSerializedKey, selectedPolygonId, opacity, segmentColorsKey]);
   
   useEffect(() => {
     if (showAllTrigger === 0 || !mapInstanceRef.current || !window.ymaps || polygons.length === 0) return;
