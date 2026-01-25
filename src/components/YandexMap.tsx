@@ -32,6 +32,8 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
   const polygonObjectsRef = useRef<Map<string, any>>(new Map());
   const isInitialLoadRef = useRef<boolean>(true);
   const [segmentColors, setSegmentColors] = useState<Record<string, string>>({});
+  
+
 
   useEffect(() => {
     const loadSegments = async () => {
@@ -86,20 +88,12 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
     };
   }, []);
 
-  const polygonSerializedKey = useMemo(() => {
-    return JSON.stringify(polygons.map(p => ({ 
-      id: p.id, 
-      segment: p.segment,
-      visible: p.visible 
-    })));
-  }, [polygons]);
-  
-  const segmentColorsKey = useMemo(() => {
-    return JSON.stringify(segmentColors);
-  }, [segmentColors]);
-
   useEffect(() => {
-    if (!mapInstanceRef.current || !window.ymaps || Object.keys(segmentColors).length === 0) return;
+    console.count('🔥 Main useEffect triggered');
+    if (!mapInstanceRef.current || !window.ymaps || Object.keys(segmentColors).length === 0 || polygons.length === 0) {
+      console.log('⏭️ Skipped: map not ready or no data');
+      return;
+    }
 
     polygonObjectsRef.current.forEach(obj => {
       mapInstanceRef.current.geoObjects.remove(obj);
@@ -225,7 +219,7 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
         isInitialLoadRef.current = false;
       }
     }
-  }, [polygonSerializedKey, selectedPolygonId, opacity, segmentColorsKey]);
+  }, [polygons, selectedPolygonId, opacity, segmentColors]);
   
   useEffect(() => {
     if (showAllTrigger === 0 || !mapInstanceRef.current || !window.ymaps || polygons.length === 0) return;
