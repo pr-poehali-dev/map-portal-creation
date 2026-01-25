@@ -113,7 +113,7 @@ export default function MapSidebar({
     };
     
     loadSegments();
-  }, [authUser]);
+  }, [authUser?.token]);
 
 
 

@@ -53,7 +53,7 @@ export default function MapCanvas({
     };
     
     loadSegments();
-  }, [user]);
+  }, [user?.token]);
   
   const getPolygonColor = (polygon: PolygonObject) => {
     const segmentNames = polygon.segment ? polygon.segment.split(',').map(s => s.trim()).filter(Boolean) : [];

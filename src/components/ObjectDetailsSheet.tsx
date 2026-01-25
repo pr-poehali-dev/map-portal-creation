@@ -58,10 +58,10 @@ export default function ObjectDetailsSheet({
       }
     };
     
-    if (selectedObject) {
+    if (selectedObject?.id) {
       loadSegments();
     }
-  }, [user, selectedObject]);
+  }, [user, selectedObject?.id]);
 
   const extractInnFromOwner = (ownerString: string): string | null => {
     const innMatch = ownerString.match(/ИНН\s*(\d{10,12})/);
