@@ -65,6 +65,8 @@ export default function Index() {
   const [viewingTrash, setViewingTrash] = useState(false);
   const [confirmPermanentDelete, setConfirmPermanentDelete] = useState<string | null>(null);
   const [confirmEmptyTrash, setConfirmEmptyTrash] = useState(false);
+  const [useYandexMap, setUseYandexMap] = useState(true);
+  const [showSvgLayer, setShowSvgLayer] = useState(false);
 
   const {
     handleRestoreFromTrash,
@@ -171,6 +173,10 @@ export default function Index() {
           setShowAllTrigger={setShowAllTrigger}
           setBulkImportOpen={setBulkImportOpen}
           setEgrnImportOpen={setEgrnImportOpen}
+          useYandexMap={useYandexMap}
+          setUseYandexMap={setUseYandexMap}
+          showSvgLayer={showSvgLayer}
+          setShowSvgLayer={setShowSvgLayer}
           handleExportAll={handleExportAll}
           handleExportFiltered={() => handleExportFiltered(filteredData)}
           handleExportCadastralNumbers={handleExportCadastralNumbers}
@@ -178,7 +184,8 @@ export default function Index() {
         />
 
         <MapCanvas
-          useYandexMap={true}
+          useYandexMap={useYandexMap}
+          showSvgLayer={showSvgLayer}
           filteredData={filteredData}
           selectedObject={selectedObject}
           setSelectedObject={setSelectedObject}

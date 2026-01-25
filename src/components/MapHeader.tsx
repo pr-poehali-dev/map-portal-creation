@@ -11,6 +11,10 @@ interface MapHeaderProps {
   setShowAllTrigger: (fn: (prev: number) => number) => void;
   setBulkImportOpen: (value: boolean) => void;
   setEgrnImportOpen: (value: boolean) => void;
+  useYandexMap: boolean;
+  setUseYandexMap: (value: boolean) => void;
+  showSvgLayer: boolean;
+  setShowSvgLayer: (value: boolean) => void;
   handleExportAll: () => void;
   handleExportFiltered: () => void;
   handleExportCadastralNumbers: () => void;
@@ -24,6 +28,10 @@ export default function MapHeader({
   setShowAllTrigger,
   setBulkImportOpen,
   setEgrnImportOpen,
+  useYandexMap,
+  setUseYandexMap,
+  showSvgLayer,
+  setShowSvgLayer,
   handleExportAll,
   handleExportFiltered,
   handleExportCadastralNumbers,
@@ -40,6 +48,26 @@ export default function MapHeader({
       </div>
 
       <div className="flex items-center gap-2">
+        <Button 
+          variant={useYandexMap ? "default" : "outline"}
+          size="sm"
+          onClick={() => setUseYandexMap(!useYandexMap)}
+          title="Яндекс.Карта"
+        >
+          <Icon name="MapPin" size={16} className="mr-2" />
+          Яндекс
+        </Button>
+
+        <Button 
+          variant={showSvgLayer ? "default" : "outline"}
+          size="sm"
+          onClick={() => setShowSvgLayer(!showSvgLayer)}
+          title="SVG подложка с объектами"
+        >
+          <Icon name="Grid" size={16} className="mr-2" />
+          Подложка
+        </Button>
+
         <Button 
           variant="outline" 
           size="sm"

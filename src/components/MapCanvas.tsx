@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface MapCanvasProps {
   useYandexMap: boolean;
+  showSvgLayer: boolean;
   filteredData: PolygonObject[];
   selectedObject: PolygonObject | null;
   setSelectedObject: (obj: PolygonObject | null) => void;
@@ -23,6 +24,7 @@ interface Segment {
 
 export default function MapCanvas({
   useYandexMap,
+  showSvgLayer,
   filteredData,
   selectedObject,
   setSelectedObject,
@@ -63,16 +65,9 @@ export default function MapCanvas({
   
   return (
     <div className="flex-1 relative bg-muted/30 overflow-hidden">
-      {useYandexMap ? (
-        <YandexMap
-          polygons={filteredData}
-          selectedPolygonId={selectedObject?.id}
-          onPolygonClick={setSelectedObject}
-          opacity={mapOpacity[0] / 100}
-          showAllTrigger={showAllTrigger}
-        />
-      ) : (
-        <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+      {/* SVG подложка - показывается если включена */}
+      {showSvgLayer && (
+        <svg className="w-full h-full absolute inset-0" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" style={{ zIndex: useYandexMap ? 1 : 2 }}>
           <defs>
             <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
               <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.2" className="text-border" />
@@ -154,6 +149,19 @@ export default function MapCanvas({
             }
           })}
         </svg>
+      )}
+
+      {/* Яндекс.Карта поверх SVG подложки */}
+      {useYandexMap && (
+        <div className="absolute inset-0" style={{ zIndex: showSvgLayer ? 2 : 1 }}>
+          <YandexMap
+            polygons={filteredData}
+            selectedPolygonId={selectedObject?.id}
+            onPolygonClick={setSelectedObject}
+            opacity={mapOpacity[0] / 100}
+            showAllTrigger={showAllTrigger}
+          />
+        </div>
       )}
     </div>
   );
