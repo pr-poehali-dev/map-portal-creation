@@ -40,16 +40,20 @@ export default function Index() {
       
       setSegmentVisibility(prev => {
         const updated = { ...prev };
+        let hasChanges = false;
+        
         allSegments.forEach(segment => {
           if (!(segment in updated)) {
             console.log('➕ Adding new segment to visibility:', segment);
             updated[segment] = true;
+            hasChanges = true;
           }
         });
-        return updated;
+        
+        return hasChanges ? updated : prev;
       });
     }
-  }, [polygonData]);
+  }, [polygonData.length]);
   const [mapOpacity, setMapOpacity] = useState([80]);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);

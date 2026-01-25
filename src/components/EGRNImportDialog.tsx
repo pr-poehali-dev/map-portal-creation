@@ -40,6 +40,15 @@ export default function EGRNImportDialog({ open, onOpenChange, onImport }: EGRNI
     setError(null);
   };
 
+  const handleClearFile = () => {
+    setFile(null);
+    setError(null);
+    setProgress(0);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const convertToPolygonObjects = (parcels: any[]) => {
     const polygons: any[] = [];
     const colors = ['#0EA5E9', '#8B5CF6', '#10B981', '#F97316', '#EAB308', '#EC4899'];
@@ -102,6 +111,7 @@ export default function EGRNImportDialog({ open, onOpenChange, onImport }: EGRNI
       const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
       
       setProgress(50);
+      console.log('📤 Sending EGRN file to backend, size:', base64.length);
 
       const response = await fetch(EGRN_PARSER_API, {
         method: 'POST',
@@ -112,17 +122,24 @@ export default function EGRNImportDialog({ open, onOpenChange, onImport }: EGRNI
         body: JSON.stringify({ file: base64 })
       });
 
+      console.log('📥 Response status:', response.status);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Ошибка обработки файла');
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+        console.error('❌ Backend error:', errorData);
+        throw new Error(errorData.error || `Ошибка обработки файла (${response.status})`);
       }
 
       const result = await response.json();
+      console.log('✅ Backend response:', result);
       setProgress(75);
 
       if (!result.success || !result.parcels || result.parcels.length === 0) {
+        console.error('❌ No valid parcels found in response');
         throw new Error('В ZIP-файле не найдено валидных выписок ЕГРН с координатами');
       }
+      
+      console.log('📦 Parcels found:', result.parcels.length);
 
       const polygons = convertToPolygonObjects(result.parcels);
       setProgress(90);
@@ -140,9 +157,8 @@ export default function EGRNImportDialog({ open, onOpenChange, onImport }: EGRNI
       });
 
       setTimeout(() => {
+        handleClearFile();
         onOpenChange(false);
-        setFile(null);
-        setProgress(0);
       }, 500);
 
     } catch (err) {
@@ -172,8 +188,15 @@ export default function EGRNImportDialog({ open, onOpenChange, onImport }: EGRNI
     }
   };
 
+  const handleDialogClose = (isOpen: boolean) => {
+    if (!isOpen && !loading) {
+      handleClearFile();
+    }
+    onOpenChange(isOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -210,9 +233,31 @@ export default function EGRNImportDialog({ open, onOpenChange, onImport }: EGRNI
             {file ? (
               <div>
                 <p className="font-medium text-foreground mb-1">{file.name}</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mb-3">
                   {(file.size / 1024).toFixed(1)} KB
                 </p>
+                <div className="flex gap-2 justify-center">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleClearFile}
+                    disabled={loading}
+                  >
+                    <Icon name="X" size={16} className="mr-2" />
+                    Удалить
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={loading}
+                  >
+                    <Icon name="RefreshCw" size={16} className="mr-2" />
+                    Заменить
+                  </Button>
+                </div>
               </div>
             ) : (
               <div>
