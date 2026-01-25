@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import MapSidebar from '@/components/MapSidebar';
@@ -95,24 +95,26 @@ export default function Index() {
     setObjectToDelete
   });
 
-  const filteredData = polygonData.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.type.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filterType === 'Все' || item.type === filterType;
-    
-    // Support multiple segments: check if any segment from object matches visible segments
-    const objectSegments = item.attributes?.['Сегмент'] || item.attributes?.['сегмент'] || item.segment;
-    const segmentList = typeof objectSegments === 'string' 
-      ? objectSegments.split(',').map(s => s.trim()) 
-      : [objectSegments];
-    
-    const matchesSegment = segmentList.some(seg => segmentVisibility[seg] || segmentVisibility[item.segment]);
-    
-    const ownerName = item.attributes?.['Правообладатель'] || item.attributes?.['правообладатель'] || '';
-    const matchesOwner = filterOwner === 'Все' || ownerName === filterOwner;
-    
-    return matchesSearch && matchesFilter && matchesSegment && matchesOwner;
-  });
+  const filteredData = useMemo(() => {
+    return polygonData.filter(item => {
+      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            item.type.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesFilter = filterType === 'Все' || item.type === filterType;
+      
+      // Support multiple segments: check if any segment from object matches visible segments
+      const objectSegments = item.attributes?.['Сегмент'] || item.attributes?.['сегмент'] || item.segment;
+      const segmentList = typeof objectSegments === 'string' 
+        ? objectSegments.split(',').map(s => s.trim()) 
+        : [objectSegments];
+      
+      const matchesSegment = segmentList.some(seg => segmentVisibility[seg] || segmentVisibility[item.segment]);
+      
+      const ownerName = item.attributes?.['Правообладатель'] || item.attributes?.['правообладатель'] || '';
+      const matchesOwner = filterOwner === 'Все' || ownerName === filterOwner;
+      
+      return matchesSearch && matchesFilter && matchesSegment && matchesOwner;
+    });
+  }, [polygonData, searchQuery, filterType, segmentVisibility, filterOwner]);
 
   const types = ['Все', ...Array.from(new Set(polygonData.map(item => item.type)))];
   

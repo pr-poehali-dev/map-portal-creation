@@ -89,11 +89,7 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
   }, []);
 
   useEffect(() => {
-    console.count('🔥 Main useEffect triggered');
-    if (!mapInstanceRef.current || !window.ymaps || Object.keys(segmentColors).length === 0 || polygons.length === 0) {
-      console.log('⏭️ Skipped: map not ready or no data');
-      return;
-    }
+    if (!mapInstanceRef.current || !window.ymaps || Object.keys(segmentColors).length === 0 || polygons.length === 0) return;
 
     polygonObjectsRef.current.forEach(obj => {
       mapInstanceRef.current.geoObjects.remove(obj);
