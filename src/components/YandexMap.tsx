@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { PolygonObject } from '@/types/polygon';
 import { formatArea } from '@/utils/geoUtils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -54,7 +54,7 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
     };
     
     loadSegments();
-  }, [user]);
+  }, [user?.token]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -86,8 +86,18 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
     };
   }, []);
 
+  const polygonSerializedKey = useMemo(() => {
+    return JSON.stringify(polygons.map(p => ({ 
+      id: p.id, 
+      segment: p.segment,
+      visible: p.visible 
+    })));
+  }, [polygons]);
+  
+  const hasSegmentColors = Object.keys(segmentColors).length > 0;
+
   useEffect(() => {
-    if (!mapInstanceRef.current || !window.ymaps || Object.keys(segmentColors).length === 0) return;
+    if (!mapInstanceRef.current || !window.ymaps || !hasSegmentColors) return;
 
     polygonObjectsRef.current.forEach(obj => {
       mapInstanceRef.current.geoObjects.remove(obj);
@@ -213,8 +223,8 @@ export default function YandexMap({ polygons, selectedPolygonId, onPolygonClick,
         isInitialLoadRef.current = false;
       }
     }
-  }, [polygons, selectedPolygonId, opacity, onPolygonClick, segmentColors]);
-
+  }, [polygonSerializedKey, selectedPolygonId, opacity, hasSegmentColors, polygons, segmentColors]);
+  
   useEffect(() => {
     if (showAllTrigger === 0 || !mapInstanceRef.current || !window.ymaps || polygons.length === 0) return;
 
