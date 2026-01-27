@@ -107,21 +107,33 @@ export function useMapHandlers({
     }
   };
 
-  const handleImport = async (importedPolygons: PolygonObject[]) => {
+  const handleImport = async (importedPolygons: Partial<PolygonObject>[] | PolygonObject[]) => {
     console.log('🚀 handleImport called with polygons:', importedPolygons.length);
     importedPolygons.forEach((p, i) => {
       console.log(`  ${i + 1}. ${p.name} (id: ${p.id})`);
     });
     
     try {
+      const polygonsToSave = importedPolygons.map(polygon => ({
+        id: polygon.id || `poly_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: polygon.name || 'Участок',
+        type: polygon.type || 'Кадастровый участок',
+        color: polygon.color || '#3b82f6',
+        coordinates: polygon.coordinates || [],
+        area: polygon.area || (polygon.coordinates ? calculatePolygonArea(polygon.coordinates) : 0),
+        segment: polygon.segment || 'default',
+        attributes: polygon.attributes || {},
+        cadastralNumber: polygon.cadastralNumber
+      } as PolygonObject));
+
       const savedPolygons = await Promise.all(
-        importedPolygons.map(polygon => polygonApi.create(polygon))
+        polygonsToSave.map(polygon => polygonApi.create(polygon))
       );
       console.log('✅ Saved polygons:', savedPolygons.length);
       
       setPolygonData(prev => [...prev, ...savedPolygons]);
       
-      const newSegments = Array.from(new Set(importedPolygons.map(p => p.segment)));
+      const newSegments = Array.from(new Set(polygonsToSave.map(p => p.segment)));
       setSegmentVisibility(prev => {
         const updated = { ...prev };
         newSegments.forEach(segment => {

@@ -1,13 +1,13 @@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import GeoImportDialog from '@/components/GeoImportDialog';
 import BulkCadastralImport from '@/components/BulkCadastralImport';
-import EGRNImportDialog from '@/components/EGRNImportDialog';
+import EgrnImportDialog from '@/components/EgrnImportDialog';
 import { PolygonObject } from '@/types/polygon';
 
 interface MapDialogsProps {
   importDialogOpen: boolean;
   setImportDialogOpen: (open: boolean) => void;
-  handleImport: (polygons: PolygonObject[]) => Promise<void>;
+  handleImport: (polygons: Partial<PolygonObject>[] | PolygonObject[]) => Promise<void>;
   bulkImportOpen: boolean;
   setBulkImportOpen: (open: boolean) => void;
   handleBulkImport: (parcels: Array<{ cadastralNumber: string; coordinates: [number, number]; area?: number; address?: string; category?: string }>) => Promise<void>;
@@ -59,7 +59,7 @@ export default function MapDialogs({
         onImport={handleBulkImport}
       />
 
-      <EGRNImportDialog
+      <EgrnImportDialog
         open={egrnImportOpen}
         onOpenChange={setEgrnImportOpen}
         onImport={handleImport}
